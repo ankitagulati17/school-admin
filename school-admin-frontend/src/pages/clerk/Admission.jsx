@@ -15,6 +15,17 @@ const STEPS = ['Personal Details', 'Parent & Address', 'Academic Info', 'Review 
 const GENDERS = ['Male', 'Female', 'Other']
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
 
+function formatDate(d) {
+  if (!d) return '—'
+  if (Array.isArray(d)) {
+    const [y, m, day] = d
+    return `${String(day).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+  }
+  const parts = String(d).split('-')
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  return d
+}
+
 const INIT = {
   name:'', dateOfBirth:'', gender:'', bloodGroup:'', address:'', city:'', state:'', pincode:'',
   fatherName:'', motherName:'', parentContact:'', parentEmail:'', parentOccupation:'',
@@ -38,18 +49,11 @@ export default function Admission() {
     setListLoading(true)
     try {
       const [s, c] = await Promise.allSettled([getStudents(), getClasses()])
-      console.log('Students result:', s)
-      console.log('Classes result:', c)
       const studentData = s.status === 'fulfilled' ? (s.value?.data || []) : []
       const classData = c.status === 'fulfilled' ? (c.value?.data || []) : []
-      console.log('Setting students:', studentData)
-      console.log('Setting classes:', classData)
       setStudents(studentData)
       setClasses(classData)
-    } catch (err) { 
-      console.error('Load error:', err)
-      toast.error('Failed to load data')
-    }
+    } catch { toast.error('Failed to load data') }
     setListLoading(false)
   }
 
@@ -61,8 +65,7 @@ export default function Admission() {
       try {
         const { data } = await getSections(classId)
         setSections(data)
-      } catch (err) {
-        console.error('Failed to load sections:', err)
+      } catch {
         toast.error('Failed to load sections')
         setSections([])
       }
@@ -78,7 +81,6 @@ export default function Admission() {
         toast.success('Student deleted successfully!')
         load()
       } catch (err) {
-        console.error('Delete error:', err)
         toast.error(err.response?.data?.message || 'Failed to delete student')
       }
     }
@@ -149,40 +151,40 @@ export default function Admission() {
   const stepContent = [
     // Step 0: Personal
     <Grid container spacing={2} key="personal">
-      <Grid item xs={12} sm={6}><TextField fullWidth required label="Full Name" value={form.name} onChange={set('name')} /></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth label="Date of Birth" type="date" InputLabelProps={{ shrink: true }} value={form.dateOfBirth} onChange={set('dateOfBirth')} /></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth select label="Gender" value={form.gender} onChange={set('gender')}>{GENDERS.map(g=><MenuItem key={g} value={g}>{g}</MenuItem>)}</TextField></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth select label="Blood Group" value={form.bloodGroup} onChange={set('bloodGroup')}>{BLOOD_GROUPS.map(g=><MenuItem key={g} value={g}>{g}</MenuItem>)}</TextField></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" required label="Full Name" value={form.name} onChange={set('name')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Date of Birth" type="date" InputLabelProps={{ shrink: true }} value={form.dateOfBirth} onChange={set('dateOfBirth')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" select label="Gender" value={form.gender} onChange={set('gender')}>{GENDERS.map(g=><MenuItem key={g} value={g}>{g}</MenuItem>)}</TextField></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" select label="Blood Group" value={form.bloodGroup} onChange={set('bloodGroup')}>{BLOOD_GROUPS.map(g=><MenuItem key={g} value={g}>{g}</MenuItem>)}</TextField></Grid>
     </Grid>,
     // Step 1: Parent & Address
     <Grid container spacing={2} key="parent">
-      <Grid item xs={12} sm={6}><TextField fullWidth label="Father's Name" value={form.fatherName} onChange={set('fatherName')} /></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth label="Mother's Name" value={form.motherName} onChange={set('motherName')} /></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth label="Parent Contact" value={form.parentContact} onChange={set('parentContact')} /></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth label="Parent Email" type="email" value={form.parentEmail} onChange={set('parentEmail')} /></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth label="Occupation" value={form.parentOccupation} onChange={set('parentOccupation')} /></Grid>
-      <Grid item xs={12}><TextField fullWidth label="Address" value={form.address} onChange={set('address')} /></Grid>
-      <Grid item xs={12} sm={4}><TextField fullWidth label="City" value={form.city} onChange={set('city')} /></Grid>
-      <Grid item xs={12} sm={4}><TextField fullWidth label="State" value={form.state} onChange={set('state')} /></Grid>
-      <Grid item xs={12} sm={4}><TextField fullWidth label="Pincode" value={form.pincode} onChange={set('pincode')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Father's Name" value={form.fatherName} onChange={set('fatherName')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Mother's Name" value={form.motherName} onChange={set('motherName')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Parent Contact" value={form.parentContact} onChange={set('parentContact')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Parent Email" type="email" value={form.parentEmail} onChange={set('parentEmail')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Occupation" value={form.parentOccupation} onChange={set('parentOccupation')} /></Grid>
+      <Grid item xs={12}><TextField fullWidth size="small" label="Address" value={form.address} onChange={set('address')} /></Grid>
+      <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="City" value={form.city} onChange={set('city')} /></Grid>
+      <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="State" value={form.state} onChange={set('state')} /></Grid>
+      <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="Pincode" value={form.pincode} onChange={set('pincode')} /></Grid>
     </Grid>,
     // Step 2: Academic
     <Grid container spacing={2} key="academic">
       <Grid item xs={12} sm={6}>
-        <TextField fullWidth select label="Class" value={form.classId} onChange={e=>handleClassChange(e.target.value)}>
+        <TextField fullWidth size="small" select label="Class" value={form.classId} onChange={e=>handleClassChange(e.target.value)}>
           {Array.isArray(classes) ? classes.map(c=><MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>) : null}
         </TextField>
       </Grid>
       <Grid item xs={12} sm={6}>
-        <TextField fullWidth select label="Section" value={form.sectionId} onChange={set('sectionId')} disabled={!form.classId}>
+        <TextField fullWidth size="small" select label="Section" value={form.sectionId} onChange={set('sectionId')} disabled={!form.classId}>
           {Array.isArray(sections) ? sections.map(s=><MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>) : null}
         </TextField>
       </Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth label="Previous Class" value={form.previousClass} onChange={set('previousClass')} /></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth label="Previous School" value={form.previousSchool} onChange={set('previousSchool')} /></Grid>
-      <Grid item xs={12} sm={4}><TextField fullWidth label="Previous %" type="number" value={form.previousPercentage} onChange={set('previousPercentage')} /></Grid>
-      <Grid item xs={12} sm={4}><TextField fullWidth label="Previous Grade" value={form.previousGrade} onChange={set('previousGrade')} /></Grid>
-      <Grid item xs={12} sm={4}><TextField fullWidth label="Admission Date" type="date" InputLabelProps={{ shrink: true }} value={form.admissionDate} onChange={set('admissionDate')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Previous Class" value={form.previousClass} onChange={set('previousClass')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Previous School" value={form.previousSchool} onChange={set('previousSchool')} /></Grid>
+      <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="Previous %" type="number" value={form.previousPercentage} onChange={set('previousPercentage')} /></Grid>
+      <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="Previous Grade" value={form.previousGrade} onChange={set('previousGrade')} /></Grid>
+      <Grid item xs={12} sm={4}><TextField fullWidth size="small" label="Admission Date" type="date" InputLabelProps={{ shrink: true }} value={form.admissionDate} onChange={set('admissionDate')} /></Grid>
     </Grid>,
     // Step 3: Review
     <Box key="review">
@@ -204,29 +206,31 @@ export default function Admission() {
   }
 
   const dialogContent = (
-    <Dialog open={editDialog} onClose={() => { setEditDialog(false); setEditId(null); }} maxWidth="sm" fullWidth>
-      <DialogTitle>Edit Student Details</DialogTitle>
+    <Dialog open={editDialog} onClose={() => { setEditDialog(false); setEditId(null); }} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <DialogTitle sx={{ pb: 1 }}>
+        <Typography variant="h6" fontWeight={700}>Edit Student Details</Typography>
+      </DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-        <TextField fullWidth label="Full Name" value={form.name} onChange={set('name')} />
-        <TextField fullWidth label="Date of Birth" type="date" InputLabelProps={{ shrink: true }} value={form.dateOfBirth} onChange={set('dateOfBirth')} />
-        <TextField fullWidth select label="Gender" value={form.gender} onChange={set('gender')}>
+        <TextField fullWidth size="small" label="Full Name" value={form.name} onChange={set('name')} />
+        <TextField fullWidth size="small" label="Date of Birth" type="date" InputLabelProps={{ shrink: true }} value={form.dateOfBirth} onChange={set('dateOfBirth')} />
+        <TextField fullWidth size="small" select label="Gender" value={form.gender} onChange={set('gender')}>
           {GENDERS.map(g=><MenuItem key={g} value={g}>{g}</MenuItem>)}
         </TextField>
-        <TextField fullWidth select label="Class" value={form.classId} onChange={e=>handleClassChange(e.target.value)}>
+        <TextField fullWidth size="small" select label="Class" value={form.classId} onChange={e=>handleClassChange(e.target.value)}>
           {Array.isArray(classes) ? classes.map(c=><MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>) : null}
         </TextField>
-        <TextField fullWidth select label="Section" value={form.sectionId} onChange={set('sectionId')} disabled={!form.classId}>
+        <TextField fullWidth size="small" select label="Section" value={form.sectionId} onChange={set('sectionId')} disabled={!form.classId}>
           {Array.isArray(sections) ? sections.map(s=><MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>) : null}
         </TextField>
-        <TextField fullWidth label="Address" value={form.address} onChange={set('address')} />
-        <TextField fullWidth label="City" value={form.city} onChange={set('city')} />
-        <TextField fullWidth label="Father's Name" value={form.fatherName} onChange={set('fatherName')} />
-        <TextField fullWidth label="Parent Contact" value={form.parentContact} onChange={set('parentContact')} />
+        <TextField fullWidth size="small" label="Address" value={form.address} onChange={set('address')} />
+        <TextField fullWidth size="small" label="City" value={form.city} onChange={set('city')} />
+        <TextField fullWidth size="small" label="Father's Name" value={form.fatherName} onChange={set('fatherName')} />
+        <TextField fullWidth size="small" label="Parent Contact" value={form.parentContact} onChange={set('parentContact')} />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={() => { setEditDialog(false); setEditId(null); }}>Cancel</Button>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={() => { setEditDialog(false); setEditId(null); }} sx={{ color: '#6b7280' }}>Cancel</Button>
         <Button variant="contained" onClick={handleEditSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} color="inherit" /> : 'Update'}
+          {loading ? <CircularProgress size={18} color="inherit" /> : 'Update'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -235,13 +239,17 @@ export default function Admission() {
   return (
     <Box>
       <Typography variant="h5" fontWeight={700} gutterBottom>Admission Module</Typography>
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        sx={{ mb: 3, borderBottom: '1px solid #e5e7eb', '& .MuiTab-root': { textTransform: 'none', fontWeight: 500, fontSize: 14 } }}
+      >
         <Tab label="New Admission" />
         <Tab label="Student List" />
       </Tabs>
 
       {tab === 0 && (
-        <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
+        <Card>
           <CardContent sx={{ p: 3 }}>
             <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
               {STEPS.map(l => <Step key={l}><StepLabel>{l}</StepLabel></Step>)}
@@ -265,13 +273,13 @@ export default function Admission() {
       {dialogContent}
 
       {tab === 1 && (
-        <Box sx={{ bgcolor:'#fff', borderRadius:3, boxShadow:1, overflow:'auto' }}>
+        <Box sx={{ bgcolor: '#fff', borderRadius: 2, border: '1px solid #e5e7eb', overflow: 'auto' }}>
           {listLoading ? <Box p={4}><CircularProgress /></Box> : Array.isArray(students) && students.length > 0 ? (
             <Table>
-              <TableHead sx={{ bgcolor:'#f5f6fa' }}>
+              <TableHead>
                 <TableRow>
                   {['Adm No','Name','Class','Section','Father','Contact','Date','Status','Actions'].map(h=>(
-                    <TableCell key={h} sx={{ fontWeight:700 }}>{h}</TableCell>
+                    <TableCell key={h} sx={{ fontWeight: 600 }}>{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHead>
@@ -284,7 +292,7 @@ export default function Admission() {
                     <TableCell>{s.section?.name}</TableCell>
                     <TableCell>{s.fatherName}</TableCell>
                     <TableCell>{s.parentContact}</TableCell>
-                    <TableCell>{s.admissionDate}</TableCell>
+                    <TableCell>{formatDate(s.admissionDate)}</TableCell>
                     <TableCell><Chip label={s.active?'Active':'Inactive'} color={s.active?'success':'default'} size="small" /></TableCell>
                     <TableCell>
                       <IconButton size="small" color="primary" onClick={() => handleEdit(s)} title="Edit student">

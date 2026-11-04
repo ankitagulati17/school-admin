@@ -25,10 +25,7 @@ export default function Analysis() {
       const [a, f] = await Promise.allSettled([getAcademicAnalysis(year), getFinancialAnalysis(year)])
       setAcademic(a.status === 'fulfilled' ? (a.value?.data || null) : null)
       setFinancial(f.status === 'fulfilled' ? (f.value?.data || null) : null)
-    } catch (err) { 
-      console.error('Load error:', err)
-      toast.error('Failed to load analysis') 
-    }
+    } catch { toast.error('Failed to load analysis') }
     setLoading(false)
   }
 

@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react'
 import {
   Box, Typography, Button, Card, CardContent, Table, TableHead, TableRow,
   TableCell, TableBody, TextField, Dialog, DialogTitle, DialogContent,
-  DialogActions, IconButton, CircularProgress, MenuItem, Grid, Alert
+  DialogActions, IconButton, CircularProgress, MenuItem, Grid, Alert, Divider
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
-import RefreshIcon from '@mui/icons-material/Refresh'
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined'
 import { getClasses } from '../../api/classApi'
 import { getSectionsByClass, addSection, updateSection, deleteSection } from '../../api/sectionApi'
 import { toast } from 'react-toastify'
+import { PageHeader, EmptyState, TableCard, SectionLabel } from '../../components/ui'
 
 export default function SectionManagement() {
   const [classes, setClasses] = useState([])
@@ -27,193 +28,115 @@ export default function SectionManagement() {
     try {
       const { data } = await getClasses()
       setClasses(Array.isArray(data) ? data : [])
-    } catch (err) {
-      console.error('Load error:', err)
-      setError('Failed to load classes')
-    }
+    } catch { setError('Failed to load classes') }
   }
 
   const loadSections = async (classId) => {
-    if (!classId) {
-      setSections([])
-      return
-    }
-    setLoading(true)
-    setError(null)
+    if (!classId) { setSections([]); return }
+    setLoading(true); setError(null)
     try {
       const { data } = await getSectionsByClass(classId)
       setSections(Array.isArray(data) ? data : [])
-    } catch (err) {
-      console.error('Load error:', err)
+    } catch {
       setError('Failed to load sections for this class')
       toast.error('Failed to load sections')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   useEffect(() => { loadClasses() }, [])
 
-  const handleClassChange = (classId) => {
-    setSelectedClass(classId)
-    loadSections(classId)
-  }
+  const handleClassChange = (classId) => { setSelectedClass(classId); loadSections(classId) }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSubmitting(true)
+    e.preventDefault(); setSubmitting(true)
     try {
-      if (!form.name.trim()) {
-        toast.error('Section name is required')
-        setSubmitting(false)
-        return
-      }
-      
+      if (!form.name.trim()) { toast.error('Section name is required'); setSubmitting(false); return }
       const payload = { name: form.name, classId: Number(selectedClass) }
-      editId 
-        ? await updateSection(editId, payload)
-        : await addSection(payload)
-      
-      toast.success(editId ? 'Section updated successfully!' : 'Section added successfully!')
-      setForm({ name: '', classId: '' })
-      setOpen(false)
-      setEditId(null)
-      loadSections(selectedClass)
+      editId ? await updateSection(editId, payload) : await addSection(payload)
+      toast.success(editId ? 'Section updated successfully' : 'Section added successfully')
+      setForm({ name: '', classId: '' }); setOpen(false); setEditId(null); loadSections(selectedClass)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save section')
-    } finally {
-      setSubmitting(false)
-    }
+    } finally { setSubmitting(false) }
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this section?')) {
-      try {
-        await deleteSection(id)
-        toast.success('Section deleted successfully!')
-        loadSections(selectedClass)
-      } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to delete section')
-      }
+      try { await deleteSection(id); toast.success('Section deleted'); loadSections(selectedClass) }
+      catch (err) { toast.error(err.response?.data?.message || 'Failed to delete section') }
     }
   }
 
   const openDialog = (sectionData) => {
-    if (sectionData) {
-      setEditId(sectionData.id)
-      setForm({ name: sectionData.name, classId: selectedClass })
-    } else {
-      setEditId(null)
-      setForm({ name: '', classId: selectedClass })
-    }
+    setEditId(sectionData?.id || null)
+    setForm({ name: sectionData?.name || '', classId: selectedClass })
     setOpen(true)
   }
 
   const selectedClassName = classes.find(c => c.id === Number(selectedClass))?.className || ''
 
   return (
-    <Box sx={{ p: 0 }}>
-      <Box>
-        <Typography variant="h5" fontWeight={700} gutterBottom>
-          🏛️ Section Management
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Create and manage sections within each class
-        </Typography>
-      </Box>
+    <Box>
+      <PageHeader
+        title="Section Management"
+        subtitle="Create and manage sections within each class"
+        action={{ label: 'Add Section', icon: <AddIcon fontSize="small" />, onClick: () => openDialog(null), disabled: !selectedClass }}
+      />
 
-      <Card sx={{ borderRadius: 3, boxShadow: 2, mb: 3 }}>
-        <CardContent>
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <SectionLabel>Select a class to manage its sections</SectionLabel>
           <Grid container spacing={2} alignItems="flex-end">
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Select Class"
-                value={selectedClass}
-                onChange={e => handleClassChange(e.target.value)}
-              >
-                <MenuItem value="">-- Select a class --</MenuItem>
-                {Array.isArray(classes) && classes.map(c => (
-                  <MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>
-                ))}
+              <TextField fullWidth size="small" select label="Class" value={selectedClass} onChange={e => handleClassChange(e.target.value)}>
+                <MenuItem value="">— Select a class —</MenuItem>
+                {classes.map(c => <MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>)}
               </TextField>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                Select a class to view and manage its sections
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                fullWidth
-                onClick={() => openDialog(null)}
-                disabled={!selectedClass}
-              >
-                Add Section
-              </Button>
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {error && selectedClass && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {error && selectedClass && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>{error}</Alert>}
 
-      {selectedClass ? (
-        loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
-            <CircularProgress />
-          </Box>
-        ) : Array.isArray(sections) && sections.length > 0 ? (
-          <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-            <CardContent>
-              <Box sx={{ mb: 2, pb: 2, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="subtitle1" fontWeight={600}>
-                    Sections for {selectedClassName}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Total sections: {sections.length}
-                  </Typography>
-                </Box>
-              </Box>
+      {!selectedClass ? (
+        <Card>
+          <CardContent>
+            <EmptyState
+              icon={<AccountTreeOutlinedIcon sx={{ fontSize: 40 }} />}
+              message="No class selected"
+              hint="Choose a class from the dropdown above to view and manage its sections"
+            />
+          </CardContent>
+        </Card>
+      ) : loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress size={28} /></Box>
+      ) : sections.length > 0 ? (
+        <Card>
+          <CardContent sx={{ p: 2.5 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Sections for <strong>{selectedClassName}</strong> — {sections.length} section{sections.length !== 1 ? 's' : ''}
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <TableCard>
               <Table>
-                <TableHead sx={{ bgcolor: '#f5f6fa' }}>
+                <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700 }}>Section Name</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Class</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
+                    <TableCell>Section Name</TableCell>
+                    <TableCell>Class</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {sections.map(s => (
                     <TableRow key={s.id} hover>
-                      <TableCell sx={{ fontWeight: 500 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <span style={{ fontSize: '18px' }}>📝</span>
-                          {s.name}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{s.schoolClass?.className}</TableCell>
+                      <TableCell sx={{ fontWeight: 500 }}>{s.name}</TableCell>
+                      <TableCell sx={{ color: '#6b7280' }}>{s.schoolClass?.className}</TableCell>
                       <TableCell>
-                        <IconButton 
-                          size="small" 
-                          onClick={() => openDialog(s)}
-                          color="primary"
-                          title="Edit section"
-                        >
+                        <IconButton size="small" sx={{ color: '#2563eb' }} onClick={() => openDialog(s)} title="Edit section">
                           <EditIcon fontSize="small" />
                         </IconButton>
-                        <IconButton 
-                          size="small" 
-                          color="error" 
-                          onClick={() => handleDelete(s.id)}
-                          title="Delete section"
-                        >
+                        <IconButton size="small" sx={{ color: '#dc2626' }} onClick={() => handleDelete(s.id)} title="Delete section">
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </TableCell>
@@ -221,60 +144,43 @@ export default function SectionManagement() {
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-            <CardContent sx={{ textAlign: 'center', py: 8 }}>
-              <Typography variant="h6" gutterBottom>
-                📭 No Sections Found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Add sections for {selectedClassName}
-              </Typography>
-              <Button 
-                variant="contained" 
-                startIcon={<AddIcon />} 
-                onClick={() => openDialog(null)}
-              >
-                Create First Section
-              </Button>
-            </CardContent>
-          </Card>
-        )
+            </TableCard>
+          </CardContent>
+        </Card>
       ) : (
-        <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-          <CardContent sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="h6" gutterBottom>
-              👆 Select a Class
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Choose a class from the dropdown above to manage its sections
-            </Typography>
+        <Card>
+          <CardContent>
+            <EmptyState
+              icon={<AccountTreeOutlinedIcon sx={{ fontSize: 40 }} />}
+              message={`No sections for ${selectedClassName}`}
+              hint='Click "Add Section" to create the first section for this class'
+            />
           </CardContent>
         </Card>
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '18px' }}>
-          {editId ? '✏️ Edit Section' : '➕ Add New Section'}
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight={700}>{editId ? 'Edit Section' : 'Add New Section'}</Typography>
+          <Typography variant="body2" color="text.secondary">For class: {selectedClassName}</Typography>
         </DialogTitle>
+        <Divider />
         <form onSubmit={handleSubmit}>
-          <DialogContent sx={{ pt: 2 }}>
+          <DialogContent sx={{ pt: 2.5 }}>
             <TextField
-              fullWidth
+              fullWidth size="small"
               label="Section Name"
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g., Section A, Section B"
-              helperText={`Creating section for ${selectedClassName}`}
+              placeholder="e.g., A, B, C"
               autoFocus
             />
           </DialogContent>
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Divider />
+          <DialogActions sx={{ px: 3, py: 2 }}>
+            <Button onClick={() => setOpen(false)} sx={{ color: '#6b7280' }}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={submitting || !form.name.trim()}>
-              {submitting ? <CircularProgress size={20} color="inherit" /> : (editId ? 'Update' : 'Add')}
+              {submitting ? <CircularProgress size={18} color="inherit" /> : (editId ? 'Update' : 'Add Section')}
             </Button>
           </DialogActions>
         </form>

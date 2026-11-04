@@ -2,21 +2,38 @@ import { useEffect, useState } from 'react'
 import {
   Box, Typography, Grid, TextField, MenuItem, Button, Card, CardContent,
   Table, TableHead, TableRow, TableCell, TableBody, Chip, CircularProgress,
-  Tabs, Tab, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions
+  Tabs, Tab, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Divider
 } from '@mui/material'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import DeleteIcon from '@mui/icons-material/Delete'
-import { processFee, getAllFees, getPendingFees, approveFee } from '../../api/feeApi'
+import PaymentIcon from '@mui/icons-material/Payment'
+import { processFee, getAllFees, approveFee } from '../../api/feeApi'
 import { getStudents } from '../../api/studentApi'
 import { toast } from 'react-toastify'
+import { PageHeader, TableCard, EmptyState, SectionLabel } from '../../components/ui'
 
 const FEE_TYPES = ['Tuition Fee', 'Exam Fee', 'Library Fee', 'Sports Fee', 'Transport Fee', 'Miscellaneous']
 const PAYMENT_MODES = ['Cash', 'Cheque', 'Online Transfer', 'UPI', 'DD']
 const STATUS_OPTS = ['PAID', 'PENDING', 'PARTIAL']
-const STATUS_COLOR = { PAID:'success', PENDING:'warning', PARTIAL:'info', WAIVED:'default' }
+const STATUS_STYLES = {
+  PAID:    { bgcolor: '#f0fdf4', color: '#16a34a' },
+  PENDING: { bgcolor: '#fffbeb', color: '#d97706' },
+  PARTIAL: { bgcolor: '#f0f9ff', color: '#0891b2' },
+  WAIVED:  { bgcolor: '#f9fafb', color: '#6b7280' },
+}
 
-const INIT = { studentId:'', amount:'', feeType:'Tuition Fee', paymentDate: new Date().toISOString().split('T')[0], paymentMode:'Cash', status:'PAID', remarks:'', academicYear:'2024-2025' }
+function formatDate(d) {
+  if (!d) return '—'
+  if (Array.isArray(d)) {
+    const [y, m, day] = d
+    return `${String(day).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+  }
+  const parts = String(d).split('-')
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  return d
+}
+
+const INIT = { studentId: '', amount: '', feeType: 'Tuition Fee', paymentDate: new Date().toISOString().split('T')[0], paymentMode: 'Cash', status: 'PAID', remarks: '', academicYear: '2024-2025' }
 
 export default function FeePayment() {
   const [tab, setTab] = useState(0)
@@ -34,10 +51,7 @@ export default function FeePayment() {
       const [f, s] = await Promise.allSettled([getAllFees(), getStudents()])
       setFees(f.status === 'fulfilled' ? (f.value?.data || []) : [])
       setStudents(s.status === 'fulfilled' ? (s.value?.data || []) : [])
-    } catch (err) { 
-      console.error('Load error:', err)
-      toast.error('Failed to load data')
-    }
+    } catch { toast.error('Failed to load data') }
     setListLoading(false)
   }
 
@@ -57,10 +71,6 @@ export default function FeePayment() {
     setLoading(false)
   }
 
-  const handleApproveClick = (fee) => {
-    setApproveDialog({ open: true, feeId: fee.id, studentName: fee.student?.name })
-  }
-
   const handleApproveConfirm = async () => {
     setApproving(true)
     try {
@@ -68,87 +78,91 @@ export default function FeePayment() {
       toast.success(`Payment approved for ${approveDialog.studentName}`)
       setApproveDialog({ open: false, feeId: null, studentName: '' })
       loadFees()
-    } catch (err) { 
-      toast.error(err.response?.data?.message || 'Failed to approve payment') 
-    }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to approve') }
     setApproving(false)
-  }
-
-  const handleApproveCancel = () => {
-    setApproveDialog({ open: false, feeId: null, studentName: '' })
   }
 
   const totalCollected = fees.filter(f => f.status === 'PAID').reduce((s, f) => s + f.amount, 0)
   const totalPending = fees.filter(f => f.status === 'PENDING').reduce((s, f) => s + f.amount, 0)
 
+  const tableData = tab === 1 ? fees : fees.filter(f => f.status === 'PENDING')
+
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} gutterBottom>Fee Payment</Typography>
+      <PageHeader title="Fee Payment" subtitle="Process payments and view fee records" />
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {[['Total Collected', `₹${totalCollected.toLocaleString()}`, 'success'],
-          ['Total Pending', `₹${totalPending.toLocaleString()}`, 'warning'],
-          ['Total Records', fees.length, 'primary']].map(([label, val, color]) => (
+      {/* Summary cards */}
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        {[
+          { label: 'Total Collected', value: `₹${totalCollected.toLocaleString()}`, bgcolor: '#f0fdf4', color: '#16a34a' },
+          { label: 'Total Pending', value: `₹${totalPending.toLocaleString()}`, bgcolor: '#fffbeb', color: '#d97706' },
+          { label: 'Total Records', value: fees.length, bgcolor: '#eff6ff', color: '#2563eb' },
+        ].map(({ label, value, bgcolor, color }) => (
           <Grid item xs={12} sm={4} key={label}>
-            <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">{label}</Typography>
-                <Typography variant="h5" fontWeight={700} color={`${color}.main`}>{val}</Typography>
+            <Card>
+              <CardContent sx={{ p: 2.5 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{label}</Typography>
+                <Typography variant="h5" fontWeight={700} sx={{ color }}>{value}</Typography>
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        sx={{ mb: 3, borderBottom: '1px solid #e5e7eb', '& .MuiTab-root': { textTransform: 'none', fontWeight: 500, fontSize: 14 } }}
+      >
         <Tab label="Process Payment" />
         <Tab label="Payment History" />
         <Tab label="Pending Payments" />
       </Tabs>
 
       {tab === 0 && (
-        <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-          <CardContent>
-            <Typography variant="h6" fontWeight={600} gutterBottom>New Fee Payment</Typography>
+        <Card>
+          <CardContent sx={{ p: 3 }}>
+            <SectionLabel>New fee payment</SectionLabel>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth select required label="Student" value={form.studentId} onChange={set('studentId')}>
-                    {Array.isArray(students) ? students.filter(s=>s.active).map(s=>(
+                  <TextField fullWidth size="small" select required label="Student" value={form.studentId} onChange={set('studentId')}>
+                    {Array.isArray(students) ? students.filter(s => s.active).map(s => (
                       <MenuItem key={s.id} value={s.id}>{s.name} ({s.admissionNumber})</MenuItem>
                     )) : null}
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth select label="Fee Type" value={form.feeType} onChange={set('feeType')}>
-                    {FEE_TYPES.map(t=><MenuItem key={t} value={t}>{t}</MenuItem>)}
+                  <TextField fullWidth size="small" select label="Fee Type" value={form.feeType} onChange={set('feeType')}>
+                    {FEE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <TextField fullWidth required label="Amount (₹)" type="number" value={form.amount} onChange={set('amount')} />
+                  <TextField fullWidth size="small" required label="Amount (₹)" type="number" value={form.amount} onChange={set('amount')} />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <TextField fullWidth select label="Payment Mode" value={form.paymentMode} onChange={set('paymentMode')}>
-                    {PAYMENT_MODES.map(m=><MenuItem key={m} value={m}>{m}</MenuItem>)}
+                  <TextField fullWidth size="small" select label="Payment Mode" value={form.paymentMode} onChange={set('paymentMode')}>
+                    {PAYMENT_MODES.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <TextField fullWidth select label="Status" value={form.status} onChange={set('status')}>
-                    {STATUS_OPTS.map(s=><MenuItem key={s} value={s}>{s}</MenuItem>)}
+                  <TextField fullWidth size="small" select label="Status" value={form.status} onChange={set('status')}>
+                    {STATUS_OPTS.map(s => <MenuItem key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</MenuItem>)}
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth label="Payment Date" type="date" InputLabelProps={{ shrink: true }} value={form.paymentDate} onChange={set('paymentDate')} />
+                  <TextField fullWidth size="small" label="Payment Date" type="date" InputLabelProps={{ shrink: true }} value={form.paymentDate} onChange={set('paymentDate')} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth label="Academic Year" value={form.academicYear} onChange={set('academicYear')} />
+                  <TextField fullWidth size="small" label="Academic Year" value={form.academicYear} onChange={set('academicYear')} />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField fullWidth label="Remarks" value={form.remarks} onChange={set('remarks')} />
+                  <TextField fullWidth size="small" label="Remarks (optional)" value={form.remarks} onChange={set('remarks')} />
                 </Grid>
                 <Grid item xs={12}>
-                  <Button variant="contained" type="submit" startIcon={<ReceiptIcon />} disabled={loading} size="large">
-                    {loading ? <CircularProgress size={22} color="inherit" /> : 'Process Payment & Generate Receipt'}
+                  <Divider sx={{ mb: 2 }} />
+                  <Button variant="contained" type="submit" startIcon={<ReceiptIcon fontSize="small" />} disabled={loading}>
+                    {loading ? <CircularProgress size={18} color="inherit" /> : 'Process Payment & Generate Receipt'}
                   </Button>
                 </Grid>
               </Grid>
@@ -158,30 +172,48 @@ export default function FeePayment() {
       )}
 
       {tab !== 0 && (
-        <Box sx={{ bgcolor:'#fff', borderRadius:3, boxShadow:1, overflow:'auto' }}>
-          {listLoading ? <Box p={4}><CircularProgress /></Box> : (
+        listLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress size={28} /></Box>
+        ) : tableData.length === 0 ? (
+          <EmptyState
+            icon={<PaymentIcon sx={{ fontSize: 40 }} />}
+            message={tab === 2 ? 'No pending payments' : 'No payment records found'}
+          />
+        ) : (
+          <TableCard>
             <Table>
-              <TableHead sx={{ bgcolor:'#f5f6fa' }}>
+              <TableHead>
                 <TableRow>
-                  {['Receipt No','Student','Fee Type','Amount','Mode','Date','Status','Actions'].map(h=>(
-                    <TableCell key={h} sx={{ fontWeight:700 }}>{h}</TableCell>
+                  {['Receipt No', 'Student', 'Fee Type', 'Amount', 'Mode', 'Date', 'Status', 'Action'].map(h => (
+                    <TableCell key={h}>{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {(Array.isArray(fees) ? (tab === 1 ? fees : fees.filter(f=>f.status==='PENDING')) : []).map(f => (
+                {tableData.map(f => (
                   <TableRow key={f.id} hover>
-                    <TableCell>{f.receiptNumber}</TableCell>
-                    <TableCell>{f.student?.name}</TableCell>
-                    <TableCell>{f.feeType}</TableCell>
-                    <TableCell>₹{f.amount?.toLocaleString()}</TableCell>
-                    <TableCell>{f.paymentMode}</TableCell>
-                    <TableCell>{f.paymentDate}</TableCell>
-                    <TableCell><Chip label={f.status} color={STATUS_COLOR[f.status]} size="small" /></TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: 13, color: '#6b7280' }}>{f.receiptNumber}</TableCell>
+                    <TableCell sx={{ fontWeight: 500 }}>{f.student?.name}</TableCell>
+                    <TableCell sx={{ color: '#6b7280' }}>{f.feeType}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>₹{f.amount?.toLocaleString()}</TableCell>
+                    <TableCell sx={{ color: '#6b7280' }}>{f.paymentMode}</TableCell>
+                    <TableCell sx={{ color: '#6b7280' }}>{formatDate(f.paymentDate)}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={f.status.charAt(0) + f.status.slice(1).toLowerCase()}
+                        size="small"
+                        sx={{ bgcolor: STATUS_STYLES[f.status]?.bgcolor, color: STATUS_STYLES[f.status]?.color, fontWeight: 600, border: 'none' }}
+                      />
+                    </TableCell>
                     <TableCell>
                       {f.status === 'PENDING' && (
-                        <IconButton size="small" color="success" onClick={() => handleApproveClick(f)} title="Approve Payment">
-                          <CheckCircleIcon />
+                        <IconButton
+                          size="small"
+                          sx={{ color: '#16a34a' }}
+                          onClick={() => setApproveDialog({ open: true, feeId: f.id, studentName: f.student?.name })}
+                          title="Approve payment"
+                        >
+                          <CheckCircleIcon fontSize="small" />
                         </IconButton>
                       )}
                     </TableCell>
@@ -189,24 +221,25 @@ export default function FeePayment() {
                 ))}
               </TableBody>
             </Table>
-          )}
-        </Box>
+          </TableCard>
+        )
       )}
 
-      <Dialog open={approveDialog.open} onClose={handleApproveCancel}>
-        <DialogTitle>Approve Payment</DialogTitle>
-        <DialogContent>
-          <Box sx={{ py: 2 }}>
-            <Typography>Are you sure you want to approve the payment for <strong>{approveDialog.studentName}</strong>?</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              This will change the status from PENDING to PAID.
-            </Typography>
-          </Box>
+      <Dialog open={approveDialog.open} onClose={() => setApproveDialog({ open: false, feeId: null, studentName: '' })} PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle>
+          <Typography variant="h6" fontWeight={700}>Approve Payment</Typography>
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ pt: 2.5 }}>
+          <Typography variant="body2">
+            Approve payment for <strong>{approveDialog.studentName}</strong>? This will change the status from <strong>PENDING</strong> to <strong>PAID</strong>.
+          </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleApproveCancel} disabled={approving}>Cancel</Button>
-          <Button onClick={handleApproveConfirm} variant="contained" color="success" disabled={approving}>
-            {approving ? <CircularProgress size={22} color="inherit" /> : 'Approve'}
+        <Divider />
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setApproveDialog({ open: false, feeId: null, studentName: '' })} sx={{ color: '#6b7280' }}>Cancel</Button>
+          <Button variant="contained" color="success" onClick={handleApproveConfirm} disabled={approving}>
+            {approving ? <CircularProgress size={18} color="inherit" /> : 'Approve'}
           </Button>
         </DialogActions>
       </Dialog>

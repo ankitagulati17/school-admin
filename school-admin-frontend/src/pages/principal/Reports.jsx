@@ -10,6 +10,19 @@ import { toast } from 'react-toastify'
 
 const YEARS = ['2024-2025', '2023-2024']
 
+// Backend returns LocalDate as [year, month, day] array or "YYYY-MM-DD" string
+function formatDate(d) {
+  if (!d) return '—'
+  if (Array.isArray(d)) {
+    const [y, m, day] = d
+    return `${String(day).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+  }
+  // already a string like "2024-06-01"
+  const parts = String(d).split('-')
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  return d
+}
+
 export default function Reports() {
   const [tab, setTab] = useState(0)
   const [classes, setClasses] = useState([])
@@ -121,7 +134,7 @@ export default function Reports() {
                           <TableCell>{s.name}</TableCell>
                           <TableCell>{s.schoolClass?.className}</TableCell>
                           <TableCell>{s.section?.name}</TableCell>
-                          <TableCell>{s.admissionDate}</TableCell>
+                          <TableCell>{formatDate(s.admissionDate)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

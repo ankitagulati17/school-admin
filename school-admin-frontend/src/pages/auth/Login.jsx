@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { Box, Card, CardContent, TextField, Button, Typography, Alert, CircularProgress, InputAdornment, IconButton } from '@mui/material'
+import {
+  Box, Card, CardContent, TextField, Button, Typography,
+  Alert, CircularProgress, InputAdornment, IconButton, Divider
+} from '@mui/material'
 import SchoolIcon from '@mui/icons-material/School'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
@@ -22,49 +25,119 @@ export default function Login() {
       await login(form.username, form.password)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid credentials')
+      setError(err.response?.data?.message || 'Invalid username or password.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#1565c0', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-      <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 3, boxShadow: 8 }}>
-        <CardContent sx={{ p: 4 }}>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <SchoolIcon sx={{ fontSize: 56, color: 'primary.main' }} />
-            <Typography variant="h5" fontWeight={700} color="primary">School Admin System</Typography>
-            <Typography variant="body2" color="text.secondary">Sign in to continue</Typography>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: '#f3f4f6',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+      }}
+    >
+      <Box sx={{ width: '100%', maxWidth: 400 }}>
+        {/* Logo / Brand */}
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 52,
+              height: 52,
+              bgcolor: '#2563eb',
+              borderRadius: 2,
+              mb: 2,
+            }}
+          >
+            <SchoolIcon sx={{ fontSize: 28, color: '#fff' }} />
           </Box>
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth label="Username" margin="normal" required autoFocus
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-            />
-            <TextField
-              fullWidth label="Password" margin="normal" required
-              type={showPwd ? 'text' : 'password'}
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPwd(!showPwd)} edge="end">
-                      {showPwd ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-            <Button fullWidth variant="contained" size="large" type="submit" sx={{ mt: 2, py: 1.5, fontWeight: 700 }} disabled={loading}>
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          <Typography variant="h5" fontWeight={700} color="text.primary">
+            School Admin
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Sign in to your account
+          </Typography>
+        </Box>
+
+        {/* Card */}
+        <Card elevation={0} sx={{ p: 1 }}>
+          <CardContent sx={{ p: 3 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2.5, fontSize: '0.8rem' }}>
+                {error}
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={500} color="text.primary" sx={{ mb: 0.75 }}>
+                  Username
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Enter your username"
+                  required
+                  autoFocus
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                />
+              </Box>
+
+              <Box sx={{ mb: 2.5 }}>
+                <Typography variant="body2" fontWeight={500} color="text.primary" sx={{ mb: 0.75 }}>
+                  Password
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Enter your password"
+                  required
+                  type={showPwd ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPwd(!showPwd)} edge="end" size="small">
+                          {showPwd ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+
+              <Button
+                fullWidth
+                variant="contained"
+                type="submit"
+                disabled={loading}
+                sx={{ py: 1.1, fontWeight: 600 }}
+              >
+                {loading ? <CircularProgress size={20} color="inherit" /> : 'Sign in'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* Role reference */}
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" color="text.secondary">
+            Roles: Admin · Principal · Teacher · Clerk · Student
+          </Typography>
+        </Box>
+      </Box>
     </Box>
   )
 }

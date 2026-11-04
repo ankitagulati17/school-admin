@@ -45,8 +45,7 @@ export default function ClassSchedule() {
         const [sec, sub] = await Promise.allSettled([getSections(classId), getSubjects(classId)])
         setSections(sec.status === 'fulfilled' ? (sec.value?.data || []) : [])
         if (target !== 'filter') setSubjects(sub.status === 'fulfilled' ? (sub.value?.data || []) : [])
-      } catch (err) {
-        console.error('Failed to load data:', err)
+      } catch {
         toast.error('Failed to load data')
         setSections([])
         setSubjects([])

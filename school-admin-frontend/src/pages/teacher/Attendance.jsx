@@ -1,16 +1,40 @@
 import { useEffect, useState } from 'react'
 import {
   Box, Typography, Grid, TextField, MenuItem, Button, Card, CardContent,
-  Table, TableHead, TableRow, TableCell, TableBody, Chip, CircularProgress, Tabs, Tab, IconButton
+  Table, TableHead, TableRow, TableCell, TableBody, Chip, CircularProgress,
+  Tabs, Tab, IconButton, Divider
 } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
 import DeleteIcon from '@mui/icons-material/Delete'
+import EventNoteIcon from '@mui/icons-material/EventNote'
 import { markAttendance, getAttendanceByClassSectionDate, deleteAttendance } from '../../api/attendanceApi'
 import { getStudentsByClassSection, getClasses, getSections } from '../../api/studentApi'
 import { toast } from 'react-toastify'
+import { PageHeader, TableCard, EmptyState, SectionLabel } from '../../components/ui'
 
 const STATUS_OPTIONS = ['PRESENT', 'ABSENT', 'LATE', 'LEAVE']
-const STATUS_COLOR = { PRESENT:'success', ABSENT:'error', LATE:'warning', LEAVE:'info' }
+const STATUS_STYLES = {
+  PRESENT: { bgcolor: '#f0fdf4', color: '#16a34a' },
+  ABSENT:  { bgcolor: '#fef2f2', color: '#dc2626' },
+  LATE:    { bgcolor: '#fffbeb', color: '#d97706' },
+  LEAVE:   { bgcolor: '#f0f9ff', color: '#0891b2' },
+}
+
+function formatDate(d) {
+  if (!d) return '—'
+  if (Array.isArray(d)) {
+    const [y, m, day] = d
+    return `${String(day).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+  }
+  const parts = String(d).split('-')
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  return d
+}
+
+function toTitleCase(str) {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
 
 export default function Attendance() {
   const [tab, setTab] = useState(0)
@@ -19,23 +43,20 @@ export default function Attendance() {
   const [students, setStudents] = useState([])
   const [attendance, setAttendance] = useState({})
   const [existing, setExisting] = useState([])
-  const [filter, setFilter] = useState({ classId:'', sectionId:'', date: new Date().toISOString().split('T')[0] })
+  const [filter, setFilter] = useState({ classId: '', sectionId: '', date: new Date().toISOString().split('T')[0] })
   const [loading, setLoading] = useState(false)
 
   useEffect(() => { getClasses().then(r => setClasses(r.data)).catch(() => {}) }, [])
 
   const handleClassChange = async (classId) => {
-    setFilter(f => ({ ...f, classId, sectionId:'' }))
+    setFilter(f => ({ ...f, classId, sectionId: '' }))
     setStudents([])
     setSections([])
     if (classId) {
       try {
         const { data } = await getSections(classId)
         setSections(data)
-      } catch (err) {
-        toast.error('Failed to load sections')
-        setSections([])
-      }
+      } catch { toast.error('Failed to load sections'); setSections([]) }
     }
   }
 
@@ -50,17 +71,10 @@ export default function Attendance() {
       setStudents(sRes.status === 'fulfilled' ? (sRes.value?.data || []) : [])
       setExisting(aRes.status === 'fulfilled' ? (aRes.value?.data || []) : [])
       const map = {}
-      if (sRes.status === 'fulfilled') {
-        sRes.value.data.forEach(s => { map[s.id] = 'PRESENT' })
-      }
-      if (aRes.status === 'fulfilled') {
-        aRes.value.data.forEach(a => { map[a.student.id] = a.status })
-      }
+      if (sRes.status === 'fulfilled') sRes.value.data.forEach(s => { map[s.id] = 'PRESENT' })
+      if (aRes.status === 'fulfilled') aRes.value.data.forEach(a => { map[a.student.id] = a.status })
       setAttendance(map)
-    } catch (err) { 
-      console.error('Load error:', err)
-      toast.error('Failed to load')
-    }
+    } catch { toast.error('Failed to load') }
     setLoading(false)
   }
 
@@ -77,13 +91,8 @@ export default function Attendance() {
   }
 
   const handleDelete = async (id) => {
-    try {
-      await deleteAttendance(id)
-      toast.success('Record deleted')
-      loadStudents()
-    } catch {
-      toast.error('Failed to delete')
-    }
+    try { await deleteAttendance(id); toast.success('Record deleted'); loadStudents() }
+    catch { toast.error('Failed to delete') }
   }
 
   const presentCount = Object.values(attendance).filter(v => v === 'PRESENT').length
@@ -91,32 +100,37 @@ export default function Attendance() {
 
   return (
     <Box>
-      <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
-        <Typography variant="h5" fontWeight={700}>Attendance Management</Typography>
-      </Box>
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <PageHeader title="Attendance" subtitle="Mark and review daily student attendance" />
+
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        sx={{ mb: 3, borderBottom: '1px solid #e5e7eb', '& .MuiTab-root': { textTransform: 'none', fontWeight: 500, fontSize: 14 } }}
+      >
         <Tab label="Mark Attendance" />
         <Tab label="View Records" />
       </Tabs>
 
-      <Card sx={{ borderRadius: 3, boxShadow: 2, mb: 3 }}>
-        <CardContent>
+      {/* Filter card */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <SectionLabel>Filter by class, section and date</SectionLabel>
           <Grid container spacing={2} alignItems="flex-end">
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth select label="Class" value={filter.classId} onChange={e=>handleClassChange(e.target.value)}>
-                {Array.isArray(classes) && classes.map(c=><MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>)}
+              <TextField fullWidth size="small" select label="Class" value={filter.classId} onChange={e => handleClassChange(e.target.value)}>
+                {Array.isArray(classes) && classes.map(c => <MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth select label="Section" value={filter.sectionId} onChange={e=>setFilter(f=>({...f,sectionId:e.target.value}))} disabled={!filter.classId}>
-                {Array.isArray(sections) && sections.map(s=><MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+              <TextField fullWidth size="small" select label="Section" value={filter.sectionId} onChange={e => setFilter(f => ({ ...f, sectionId: e.target.value }))} disabled={!filter.classId}>
+                {Array.isArray(sections) && sections.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth label="Date" type="date" InputLabelProps={{ shrink:true }} value={filter.date} onChange={e=>setFilter(f=>({...f,date:e.target.value}))} />
+              <TextField fullWidth size="small" label="Date" type="date" InputLabelProps={{ shrink: true }} value={filter.date} onChange={e => setFilter(f => ({ ...f, date: e.target.value }))} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <Button variant="contained" fullWidth onClick={loadStudents} disabled={!filter.classId||!filter.sectionId}>
+              <Button variant="contained" fullWidth onClick={loadStudents} disabled={!filter.classId || !filter.sectionId}>
                 Load Students
               </Button>
             </Grid>
@@ -125,36 +139,54 @@ export default function Attendance() {
       </Card>
 
       {loading ? (
-        <Box sx={{ display:'flex', justifyContent:'center', py:6 }}><CircularProgress /></Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress size={28} /></Box>
       ) : tab === 0 ? (
-        Array.isArray(students) && students.length > 0 ? (
-          <Box sx={{ bgcolor:'#fff', borderRadius:3, boxShadow:1 }}>
-            <Box sx={{ p:2, display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #eee' }}>
-              <Typography variant="body1">
-                Total: <strong>{students.length}</strong> | Present: <strong style={{color:'green'}}>{presentCount}</strong> | Absent: <strong style={{color:'red'}}>{absentCount}</strong>
-              </Typography>
-              <Button variant="contained" color="success" startIcon={<SaveIcon />} onClick={handleSubmit}>
+        students.length > 0 ? (
+          <TableCard>
+            <Box sx={{ px: 2.5, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e7eb' }}>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Total: <strong style={{ color: '#111827' }}>{students.length}</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Present: <strong style={{ color: '#16a34a' }}>{presentCount}</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Absent: <strong style={{ color: '#dc2626' }}>{absentCount}</strong>
+                </Typography>
+              </Box>
+              <Button variant="contained" size="small" startIcon={<SaveIcon fontSize="small" />} onClick={handleSubmit}>
                 Save Attendance
               </Button>
             </Box>
             <Table>
-              <TableHead sx={{ bgcolor:'#f5f6fa' }}>
+              <TableHead>
                 <TableRow>
-                  {['#','Adm No','Name','Status'].map(h=><TableCell key={h} sx={{ fontWeight:700 }}>{h}</TableCell>)}
+                  {['#', 'Adm No', 'Student Name', 'Status'].map(h => <TableCell key={h}>{h}</TableCell>)}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {students.map((s, i) => (
                   <TableRow key={s.id} hover>
-                    <TableCell>{i+1}</TableCell>
-                    <TableCell>{s.admissionNumber}</TableCell>
-                    <TableCell>{s.name}</TableCell>
+                    <TableCell sx={{ color: '#9ca3af', fontSize: 13 }}>{i + 1}</TableCell>
+                    <TableCell sx={{ color: '#6b7280', fontFamily: 'monospace', fontSize: 13 }}>{s.admissionNumber}</TableCell>
+                    <TableCell sx={{ fontWeight: 500 }}>{s.name}</TableCell>
                     <TableCell>
-                      <TextField select size="small" value={attendance[s.id] || 'PRESENT'}
-                        onChange={e=>setAttendance(a=>({...a,[s.id]:e.target.value}))}
-                        sx={{ minWidth:130 }}>
-                        {STATUS_OPTIONS.map(o=>(
-                          <MenuItem key={o} value={o}><Chip label={o} color={STATUS_COLOR[o]} size="small" /></MenuItem>
+                      <TextField
+                        select
+                        size="small"
+                        value={attendance[s.id] || 'PRESENT'}
+                        onChange={e => setAttendance(a => ({ ...a, [s.id]: e.target.value }))}
+                        sx={{ minWidth: 130 }}
+                      >
+                        {STATUS_OPTIONS.map(o => (
+                          <MenuItem key={o} value={o}>
+                            <Chip
+                              label={toTitleCase(o)}
+                              size="small"
+                              sx={{ bgcolor: STATUS_STYLES[o]?.bgcolor, color: STATUS_STYLES[o]?.color, fontWeight: 600, border: 'none' }}
+                            />
+                          </MenuItem>
                         ))}
                       </TextField>
                     </TableCell>
@@ -162,31 +194,39 @@ export default function Attendance() {
                 ))}
               </TableBody>
             </Table>
-          </Box>
+          </TableCard>
         ) : (
-          <Box sx={{ textAlign:'center', py:8, color:'text.secondary' }}>
-            <Typography variant="body1">Select a class, section and date above, then click "Load Students" to mark attendance</Typography>
-          </Box>
+          <EmptyState
+            icon={<EventNoteIcon sx={{ fontSize: 40 }} />}
+            message="No students loaded"
+            hint="Select a class, section and date above, then click Load Students"
+          />
         )
       ) : (
         existing.length > 0 ? (
-          <Box sx={{ bgcolor:'#fff', borderRadius:3, boxShadow:1, overflow:'auto' }}>
+          <TableCard>
             <Table>
-              <TableHead sx={{ bgcolor:'#f5f6fa' }}>
+              <TableHead>
                 <TableRow>
-                  {['#','Student','Admission No','Date','Status','Action'].map(h=><TableCell key={h} sx={{ fontWeight:700 }}>{h}</TableCell>)}
+                  {['#', 'Student', 'Admission No', 'Date', 'Status', 'Action'].map(h => <TableCell key={h}>{h}</TableCell>)}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {existing.map((a, i) => (
                   <TableRow key={a.id} hover>
-                    <TableCell>{i+1}</TableCell>
-                    <TableCell>{a.student?.name}</TableCell>
-                    <TableCell>{a.student?.admissionNumber}</TableCell>
-                    <TableCell>{a.date}</TableCell>
-                    <TableCell><Chip label={a.status} color={STATUS_COLOR[a.status]} size="small" /></TableCell>
+                    <TableCell sx={{ color: '#9ca3af', fontSize: 13 }}>{i + 1}</TableCell>
+                    <TableCell sx={{ fontWeight: 500 }}>{a.student?.name}</TableCell>
+                    <TableCell sx={{ color: '#6b7280', fontFamily: 'monospace', fontSize: 13 }}>{a.student?.admissionNumber}</TableCell>
+                    <TableCell sx={{ color: '#6b7280' }}>{formatDate(a.date)}</TableCell>
                     <TableCell>
-                      <IconButton size="small" color="error" onClick={() => handleDelete(a.id)}>
+                      <Chip
+                        label={toTitleCase(a.status)}
+                        size="small"
+                        sx={{ bgcolor: STATUS_STYLES[a.status]?.bgcolor, color: STATUS_STYLES[a.status]?.color, fontWeight: 600, border: 'none' }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton size="small" sx={{ color: '#dc2626' }} onClick={() => handleDelete(a.id)}>
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
@@ -194,11 +234,13 @@ export default function Attendance() {
                 ))}
               </TableBody>
             </Table>
-          </Box>
+          </TableCard>
         ) : (
-          <Box sx={{ textAlign:'center', py:8, color:'text.secondary' }}>
-            <Typography variant="body1">Select a class, section and date above, then click "Load Students" to view records</Typography>
-          </Box>
+          <EmptyState
+            icon={<EventNoteIcon sx={{ fontSize: 40 }} />}
+            message="No records found"
+            hint="Select filters above and click Load Students to view attendance records"
+          />
         )
       )}
     </Box>

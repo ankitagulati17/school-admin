@@ -10,7 +10,7 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f5f6fa' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f9fafb' }}>
       <Navbar drawerWidth={DRAWER_WIDTH} onMenuClick={() => setMobileOpen(true)} />
       <Sidebar
         drawerWidth={DRAWER_WIDTH}
