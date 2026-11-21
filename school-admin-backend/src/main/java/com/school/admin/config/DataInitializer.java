@@ -83,7 +83,7 @@ public class DataInitializer implements ApplicationRunner {
             "Class 10", List.of(new String[]{"Mathematics","MATH10"}, new String[]{"English","ENG10"}, new String[]{"Physics","PHY10"}, new String[]{"Chemistry","CHE10"}, new String[]{"Biology","BIO10"}, new String[]{"History","HIS10"})
         );
 
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 12; i++) {
             String className = "Class " + i;
             SchoolClass sc = classRepository.findByClassName(className).orElseGet(() ->
                 classRepository.save(SchoolClass.builder().className(className).build())
@@ -204,12 +204,12 @@ public class DataInitializer implements ApplicationRunner {
             List<Subject> subjects = subjectRepository.findBySchoolClassId(sc.getId());
 
             String[][] topicsByTerm = {
-                {"Term 1", "Introduction & Basic Concepts",     true},
-                {"Term 1", "Fundamental Principles",            true},
-                {"Term 1", "Core Applications",                 true},
-                {"Term 2", "Advanced Concepts",                 false},
-                {"Term 2", "Problem Solving Techniques",        false},
-                {"Term 2", "Revision & Practice",               false},
+                {"Term 1", "Introduction & Basic Concepts",     "true"},
+                {"Term 1", "Fundamental Principles",            "true"},
+                {"Term 1", "Core Applications",                 "true"},
+                {"Term 2", "Advanced Concepts",                 "false"},
+                {"Term 2", "Problem Solving Techniques",        "false"},
+                {"Term 2", "Revision & Practice",               "false"},
             };
 
             for (Subject subject : subjects) {

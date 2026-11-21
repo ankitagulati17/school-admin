@@ -50,11 +50,23 @@ export default function ClassManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
+    const name = form.className.trim()
+    if (!name) { toast.error('Class name is required'); setSubmitting(false); return }
+    // Must match "Class N" format where N is 1-12
+    const validPattern = /^Class\s([1-9]|10|11|12)$/i
+    if (!validPattern.test(name)) {
+      toast.error('Invalid class name. Use format: Class 1, Class 2 ... Class 12')
+      setSubmitting(false); return
+    }
+    // Proper casing: "Class N"
+    const formatted = 'Class ' + name.replace(/^class\s+/i, '')
+    // Check duplicate
+    const exists = classes.some(c => c.className.toLowerCase() === formatted.toLowerCase() && c.id !== editId)
+    if (exists) { toast.error(`${formatted} already exists`); setSubmitting(false); return }
     try {
-      if (!form.className.trim()) { toast.error('Class name is required'); setSubmitting(false); return }
       editId
-        ? await updateClass(editId, { className: form.className })
-        : await addClass({ className: form.className })
+        ? await updateClass(editId, { className: formatted })
+        : await addClass({ className: formatted })
       toast.success(editId ? 'Class updated successfully' : 'Class added successfully')
       setForm({ className: '' }); setOpen(false); setEditId(null); loadClasses()
     } catch (err) {
@@ -159,14 +171,19 @@ export default function ClassManagement() {
               value={form.className}
               onChange={e => setForm({ className: e.target.value })}
               placeholder="e.g., Class 1, Class 5, Class 10"
-              helperText="Enter the class name"
+              error={form.className.trim() !== '' && !/^Class\s([1-9]|10|11|12)$/i.test(form.className.trim())}
+              helperText={
+                form.className.trim() !== '' && !/^Class\s([1-9]|10|11|12)$/i.test(form.className.trim())
+                  ? 'Format must be: Class 1, Class 2 ... Class 12'
+                  : 'Only Class 1 to Class 12 are allowed'
+              }
               autoFocus
             />
           </DialogContent>
           <Divider />
           <DialogActions sx={{ px: 3, py: 2 }}>
             <Button onClick={() => setOpen(false)} sx={{ color: '#6b7280' }}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={submitting || !form.className.trim()}>
+            <Button type="submit" variant="contained" disabled={submitting || !form.className.trim() || !/^Class\s([1-9]|10|11|12)$/i.test(form.className.trim())}>
               {submitting ? <CircularProgress size={18} color="inherit" /> : (editId ? 'Update' : 'Add Class')}
             </Button>
           </DialogActions>
