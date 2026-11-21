@@ -4,11 +4,13 @@ import com.school.admin.model.SchoolClass;
 import com.school.admin.model.Section;
 import com.school.admin.model.Student;
 import com.school.admin.model.Subject;
+import com.school.admin.model.Syllabus;
 import com.school.admin.model.User;
 import com.school.admin.repository.SchoolClassRepository;
 import com.school.admin.repository.SectionRepository;
 import com.school.admin.repository.StudentRepository;
 import com.school.admin.repository.SubjectRepository;
+import com.school.admin.repository.SyllabusRepository;
 import com.school.admin.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
@@ -29,6 +31,7 @@ public class DataInitializer implements ApplicationRunner {
     private final SectionRepository sectionRepository;
     private final SubjectRepository subjectRepository;
     private final StudentRepository studentRepository;
+    private final SyllabusRepository syllabusRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -36,6 +39,7 @@ public class DataInitializer implements ApplicationRunner {
         seedUsers();
         seedClasses();
         seedStudents();
+        seedSyllabus();
     }
 
     private void seedUsers() {
@@ -183,6 +187,47 @@ public class DataInitializer implements ApplicationRunner {
                     .active(true)
                     .build())
             );
+        }
+    }
+
+    private void seedSyllabus() {
+        if (syllabusRepository.count() > 0) return;
+
+        User teacher = userRepository.findByUsername("teacher1").orElse(null);
+        if (teacher == null) return;
+
+        // Seed syllabus for Class 9 and Class 10
+        for (int classNum : new int[]{7, 9, 10}) {
+            SchoolClass sc = classRepository.findByClassName("Class " + classNum).orElse(null);
+            if (sc == null) continue;
+
+            List<Subject> subjects = subjectRepository.findBySchoolClassId(sc.getId());
+
+            String[][] topicsByTerm = {
+                {"Term 1", "Introduction & Basic Concepts",     true},
+                {"Term 1", "Fundamental Principles",            true},
+                {"Term 1", "Core Applications",                 true},
+                {"Term 2", "Advanced Concepts",                 false},
+                {"Term 2", "Problem Solving Techniques",        false},
+                {"Term 2", "Revision & Practice",               false},
+            };
+
+            for (Subject subject : subjects) {
+                for (String[] t : topicsByTerm) {
+                    boolean completed = Boolean.parseBoolean(t[2]);
+                    syllabusRepository.save(Syllabus.builder()
+                        .schoolClass(sc)
+                        .subject(subject)
+                        .term(t[0])
+                        .topic(subject.getName() + " — " + t[1])
+                        .description("Demo topic for " + subject.getName())
+                        .completed(completed)
+                        .completedDate(completed ? LocalDate.of(2024, 9, 30) : null)
+                        .academicYear("2024-2025")
+                        .teacher(teacher)
+                        .build());
+                }
+            }
         }
     }
 }
