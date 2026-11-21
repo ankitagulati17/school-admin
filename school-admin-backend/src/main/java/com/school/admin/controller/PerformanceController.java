@@ -5,6 +5,7 @@ import com.school.admin.exception.BadRequestException;
 import com.school.admin.model.User;
 import com.school.admin.repository.UserRepository;
 import com.school.admin.service.PerformanceService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,14 +23,14 @@ public class PerformanceController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public ResponseEntity<?> record(@RequestBody PerformanceRequest request,
+    public ResponseEntity<?> record(@Valid @RequestBody PerformanceRequest request,
                                     @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(performanceService.record(request, userDetails.getUsername()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody PerformanceRequest request) {
+    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody PerformanceRequest request) {
         return ResponseEntity.ok(performanceService.update(id, request));
     }
 

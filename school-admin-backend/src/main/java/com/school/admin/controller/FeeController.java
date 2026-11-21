@@ -2,6 +2,7 @@ package com.school.admin.controller;
 
 import com.school.admin.dto.FeePaymentRequest;
 import com.school.admin.service.FeeService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +19,7 @@ public class FeeController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('CLERK','ADMIN')")
-    public ResponseEntity<?> process(@RequestBody FeePaymentRequest request,
+    public ResponseEntity<?> process(@Valid @RequestBody FeePaymentRequest request,
                                      @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(feeService.process(request, userDetails.getUsername()));
     }

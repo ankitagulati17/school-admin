@@ -61,6 +61,10 @@ export default function FeePayment() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const amount = Number(form.amount)
+    if (!form.studentId) { toast.error('Please select a student'); return }
+    if (!amount || amount <= 0) { toast.error('Amount must be greater than 0'); return }
+    if (amount > 1000000) { toast.error('Amount seems too large. Please verify.'); return }
     setLoading(true)
     try {
       const { data } = await processFee({ ...form, studentId: Number(form.studentId), amount: Number(form.amount) })
@@ -138,7 +142,11 @@ export default function FeePayment() {
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <TextField fullWidth size="small" required label="Amount (₹)" type="number" value={form.amount} onChange={set('amount')} />
+                  <TextField fullWidth size="small" required label="Amount (₹)" type="number" value={form.amount} onChange={set('amount')}
+                    inputProps={{ min: 1 }}
+                    error={form.amount !== '' && Number(form.amount) <= 0}
+                    helperText={form.amount !== '' && Number(form.amount) <= 0 ? 'Amount must be greater than 0' : ''}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <TextField fullWidth size="small" select label="Payment Mode" value={form.paymentMode} onChange={set('paymentMode')}>

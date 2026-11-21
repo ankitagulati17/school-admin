@@ -69,9 +69,14 @@ export default function Performance() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const marks = Number(form.marks)
+    const maxMarks = Number(form.maxMarks)
+    if (maxMarks <= 0) { toast.error('Max marks must be greater than 0'); return }
+    if (marks < 0) { toast.error('Marks cannot be negative'); return }
+    if (marks > maxMarks) { toast.error(`Marks (${marks}) cannot exceed Max Marks (${maxMarks})`); return }
     setLoading(true)
     try {
-      const payload = { ...form, studentId: Number(form.studentId), subjectId: Number(form.subjectId), marks: Number(form.marks), maxMarks: Number(form.maxMarks) }
+      const payload = { ...form, studentId: Number(form.studentId), subjectId: Number(form.subjectId), marks, maxMarks }
       editId ? await updatePerformance(editId, payload) : await recordPerformance(payload)
       toast.success(editId ? 'Record updated' : 'Record saved')
       setOpen(false); setEditId(null); setForm(INIT); loadRecords()
@@ -195,8 +200,18 @@ export default function Performance() {
               {EXAM_TYPES.map(t => <MenuItem key={t} value={t}>{toTitleCase(t)}</MenuItem>)}
             </TextField>
             <Grid container spacing={2}>
-              <Grid item xs={6}><TextField fullWidth size="small" label="Marks" type="number" required value={form.marks} onChange={set('marks')} /></Grid>
-              <Grid item xs={6}><TextField fullWidth size="small" label="Max Marks" type="number" required value={form.maxMarks} onChange={set('maxMarks')} /></Grid>
+              <Grid item xs={6}>
+                <TextField fullWidth size="small" label="Marks" type="number" required value={form.marks} onChange={set('marks')}
+                  error={Number(form.marks) > Number(form.maxMarks) && form.marks !== ''}
+                  helperText={Number(form.marks) > Number(form.maxMarks) && form.marks !== '' ? `Cannot exceed max marks (${form.maxMarks})` : ''}
+                  inputProps={{ min: 0 }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField fullWidth size="small" label="Max Marks" type="number" required value={form.maxMarks} onChange={set('maxMarks')}
+                  inputProps={{ min: 1 }}
+                />
+              </Grid>
             </Grid>
             <TextField size="small" select label="Term" value={form.term} onChange={set('term')}>
               {TERMS.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}

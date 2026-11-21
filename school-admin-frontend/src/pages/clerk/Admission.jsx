@@ -7,6 +7,8 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import SearchIcon from '@mui/icons-material/Search'
+import InputAdornment from '@mui/material/InputAdornment'
 import { admitStudent, getStudents, getClasses, getSections, updateStudent, deactivateStudent } from '../../api/studentApi'
 import { toast } from 'react-toastify'
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
@@ -46,6 +48,7 @@ export default function Admission() {
   const [editDialog, setEditDialog] = useState(false)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [search, setSearch] = useState('')
 
   const load = async () => {
     setListLoading(true)
@@ -138,6 +141,9 @@ export default function Admission() {
   }
 
   const handleSubmit = async () => {
+    if (form.parentContact && !/^[6-9]\d{9}$/.test(form.parentContact)) {
+      toast.error('Invalid phone number. Must be 10 digits starting with 6-9'); return
+    }
     setLoading(true)
     try {
       await admitStudent({ ...form, classId: Number(form.classId), sectionId: Number(form.sectionId), previousPercentage: Number(form.previousPercentage) || null })
@@ -162,7 +168,11 @@ export default function Admission() {
     <Grid container spacing={2} key="parent">
       <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Father's Name" value={form.fatherName} onChange={set('fatherName')} /></Grid>
       <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Mother's Name" value={form.motherName} onChange={set('motherName')} /></Grid>
-      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Parent Contact" value={form.parentContact} onChange={set('parentContact')} /></Grid>
+      <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Parent Contact" value={form.parentContact} onChange={set('parentContact')}
+        inputProps={{ maxLength: 10 }}
+        error={form.parentContact !== '' && !/^[6-9]\d{9}$/.test(form.parentContact)}
+        helperText={form.parentContact !== '' && !/^[6-9]\d{9}$/.test(form.parentContact) ? '10-digit mobile number required' : ''}
+      /></Grid>
       <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Parent Email" type="email" value={form.parentEmail} onChange={set('parentEmail')} /></Grid>
       <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Occupation" value={form.parentOccupation} onChange={set('parentOccupation')} /></Grid>
       <Grid item xs={12}><TextField fullWidth size="small" label="Address" value={form.address} onChange={set('address')} /></Grid>
@@ -291,7 +301,34 @@ export default function Admission() {
 
       {tab === 1 && (
         <Box sx={{ bgcolor: '#fff', borderRadius: 2, border: '1px solid #e5e7eb', overflow: 'auto' }}>
-          {listLoading ? <Box p={4}><CircularProgress /></Box> : Array.isArray(students) && students.length > 0 ? (
+          <Box sx={{ p: 2, borderBottom: '1px solid #e5e7eb' }}>
+            <TextField
+              size="small"
+              placeholder="Search by name, admission no, class..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(0) }}
+              sx={{ width: 320 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" sx={{ color: '#9ca3af' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+          {listLoading ? <Box p={4}><CircularProgress /></Box> : (() => {
+            const filtered = Array.isArray(students) ? students.filter(s => {
+              const q = search.toLowerCase()
+              return !q ||
+                s.name?.toLowerCase().includes(q) ||
+                s.admissionNumber?.toLowerCase().includes(q) ||
+                s.schoolClass?.className?.toLowerCase().includes(q) ||
+                s.section?.name?.toLowerCase().includes(q) ||
+                s.fatherName?.toLowerCase().includes(q) ||
+                s.parentContact?.includes(q)
+            }) : []
+            return filtered.length > 0 ? (
             <>
               <Table>
                 <TableHead>
@@ -302,7 +339,7 @@ export default function Admission() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {students.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(s => (
+                  {filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(s => (
                     <TableRow key={s.id} hover>
                       <TableCell>{s.admissionNumber}</TableCell>
                       <TableCell>{s.name}</TableCell>
@@ -326,7 +363,7 @@ export default function Admission() {
               </Table>
               <TablePagination
                 component="div"
-                count={students.length}
+                count={filtered.length}
                 page={page}
                 onPageChange={(_, newPage) => setPage(newPage)}
                 rowsPerPage={rowsPerPage}
@@ -336,9 +373,10 @@ export default function Admission() {
             </>
           ) : (
             <Box p={4} sx={{ textAlign:'center', color:'text.secondary' }}>
-              <Typography variant="body1">No students admitted yet</Typography>
+              <Typography variant="body1">{search ? 'No students match your search' : 'No students admitted yet'}</Typography>
             </Box>
-          )}
+          )
+          })()}
         </Box>
       )}
     </Box>

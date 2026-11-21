@@ -3,6 +3,7 @@ package com.school.admin.controller;
 import com.school.admin.dto.LoginRequest;
 import com.school.admin.dto.UserRequest;
 import com.school.admin.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +23,7 @@ public class AuthController {
 
     @PostMapping("/register")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> register(@RequestBody UserRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody UserRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
