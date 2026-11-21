@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Box, Typography, Grid, TextField, MenuItem, Button, Card, CardContent,
   Table, TableHead, TableRow, TableCell, TableBody, CircularProgress,
-  IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip
+  IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, Divider
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -10,6 +10,8 @@ import EditIcon from '@mui/icons-material/Edit'
 import { createSchedule, updateSchedule, getScheduleByClassSection, deleteSchedule, getTeachers } from '../../api/scheduleApi'
 import { getClasses, getSections, getSubjects } from '../../api/studentApi'
 import { toast } from 'react-toastify'
+import { PageHeader, EmptyState, SectionLabel } from '../../components/ui'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -90,21 +92,23 @@ export default function ClassSchedule() {
 
   return (
     <Box>
-      <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
-        <Typography variant="h5" fontWeight={700}>Class Schedule</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditId(null); setForm(INIT); setOpen(true) }}>Add Period</Button>
-      </Box>
+      <PageHeader
+        title="Class Schedule"
+        subtitle="View and manage the weekly timetable for each class and section"
+        action={{ label: 'Add Period', icon: <AddIcon fontSize="small" />, onClick: () => { setEditId(null); setForm(INIT); setOpen(true) } }}
+      />
 
-      <Card sx={{ borderRadius:3, boxShadow:2, mb:3 }}>
+      <Card sx={{ borderRadius: 3, boxShadow: 2, mb: 3 }}>
         <CardContent>
+          <SectionLabel>Select a class and section to view the timetable</SectionLabel>
           <Grid container spacing={2} alignItems="flex-end">
             <Grid item xs={12} sm={4}>
-              <TextField fullWidth select label="Class" value={filter.classId} onChange={e=>handleClassChange(e.target.value,'filter')}>
+              <TextField fullWidth size="small" select label="Class" value={filter.classId} onChange={e=>handleClassChange(e.target.value,'filter')}>
               {Array.isArray(classes) ? classes.map(c=><MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>) : null}
             </TextField>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <TextField fullWidth select label="Section" value={filter.sectionId} onChange={e=>setFilter(f=>({...f,sectionId:e.target.value}))} disabled={!filter.classId}>
+            <TextField fullWidth size="small" select label="Section" value={filter.sectionId} onChange={e=>setFilter(f=>({...f,sectionId:e.target.value}))} disabled={!filter.classId}>
               {Array.isArray(sections) ? sections.map(s=><MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>) : null}
               </TextField>
             </Grid>
@@ -145,39 +149,45 @@ export default function ClassSchedule() {
           </Table>
         </Box>
       ) : (
-        <Box sx={{ textAlign:'center', py:8, color:'text.secondary' }}>
-          <Typography variant="body1">Select a class and section above, then click "Load Timetable" to view the schedule</Typography>
-        </Box>
+        <EmptyState
+          icon={<CalendarMonthIcon sx={{ fontSize: 40 }} />}
+          message="No schedule loaded"
+          hint='Select a class and section above, then click "Load Timetable" to view the schedule'
+        />
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editId ? 'Edit' : 'Add'} Class Period</DialogTitle>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight={700}>{editId ? 'Edit' : 'Add'} Class Period</Typography>
+        </DialogTitle>
+        <Divider />
         <form onSubmit={handleSubmit}>
-          <DialogContent sx={{ display:'flex', flexDirection:'column', gap:2 }}>
-            <TextField select label="Class" required value={form.classId} onChange={e=>handleClassChange(e.target.value,'form')}>
+          <DialogContent sx={{ display:'flex', flexDirection:'column', gap:2, pt: 2.5 }}>
+            <TextField select label="Class" required value={form.classId} onChange={e=>handleClassChange(e.target.value,'form')} size="small">
               {Array.isArray(classes) ? classes.map(c=><MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>) : null}
             </TextField>
-            <TextField select label="Section" required value={form.sectionId} onChange={set('sectionId')} disabled={!form.classId}>
+            <TextField select label="Section" required value={form.sectionId} onChange={set('sectionId')} disabled={!form.classId} size="small">
               {Array.isArray(sections) ? sections.map(s=><MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>) : null}
             </TextField>
-            <TextField select label="Subject" required value={form.subjectId} onChange={set('subjectId')}>
+            <TextField select label="Subject" required value={form.subjectId} onChange={set('subjectId')} size="small">
               {Array.isArray(subjects) ? subjects.map(s=><MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>) : null}
             </TextField>
-            <TextField select label="Teacher" required value={form.teacherId} onChange={set('teacherId')}>
+            <TextField select label="Teacher" required value={form.teacherId} onChange={set('teacherId')} size="small">
               {Array.isArray(teachers) ? teachers.map(t=><MenuItem key={t.id} value={t.id}>{t.fullName}</MenuItem>) : null}
             </TextField>
-            <TextField select label="Day" value={form.day} onChange={set('day')}>
+            <TextField select label="Day" value={form.day} onChange={set('day')} size="small">
               {DAYS.map(d=><MenuItem key={d} value={d}>{d}</MenuItem>)}
             </TextField>
             <Grid container spacing={2}>
-              <Grid item xs={4}><TextField fullWidth select label="Period" value={form.period} onChange={set('period')}>{PERIODS.map(p=><MenuItem key={p} value={p}>{p}</MenuItem>)}</TextField></Grid>
-              <Grid item xs={4}><TextField fullWidth label="Start" type="time" InputLabelProps={{ shrink:true }} value={form.startTime} onChange={set('startTime')} /></Grid>
-              <Grid item xs={4}><TextField fullWidth label="End" type="time" InputLabelProps={{ shrink:true }} value={form.endTime} onChange={set('endTime')} /></Grid>
+              <Grid item xs={4}><TextField fullWidth size="small" select label="Period" value={form.period} onChange={set('period')}>{PERIODS.map(p=><MenuItem key={p} value={p}>{p}</MenuItem>)}</TextField></Grid>
+              <Grid item xs={4}><TextField fullWidth size="small" label="Start" type="time" InputLabelProps={{ shrink:true }} value={form.startTime} onChange={set('startTime')} /></Grid>
+              <Grid item xs={4}><TextField fullWidth size="small" label="End" type="time" InputLabelProps={{ shrink:true }} value={form.endTime} onChange={set('endTime')} /></Grid>
             </Grid>
-            <TextField label="Academic Year" value={form.academicYear} onChange={set('academicYear')} />
+            <TextField size="small" label="Academic Year" value={form.academicYear} onChange={set('academicYear')} />
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Divider />
+          <DialogActions sx={{ px: 3, py: 2 }}>
+            <Button onClick={() => setOpen(false)} sx={{ color: '#6b7280' }}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={loading}>
               {loading ? <CircularProgress size={20} color="inherit" /> : (editId?'Update':'Save')}
             </Button>

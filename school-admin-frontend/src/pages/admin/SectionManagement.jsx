@@ -80,7 +80,7 @@ export default function SectionManagement() {
       <PageHeader
         title="Section Management"
         subtitle="Create and manage sections within each class"
-        action={{ label: 'Add Section', icon: <AddIcon fontSize="small" />, onClick: () => openDialog(null), disabled: !selectedClass }}
+        action={{ label: 'Add Section', icon: <AddIcon fontSize="small" />, onClick: () => openDialog(null), disabled: !selectedClass, disabledHint: 'Select a class first' }}
       />
 
       <Card sx={{ mb: 3 }}>

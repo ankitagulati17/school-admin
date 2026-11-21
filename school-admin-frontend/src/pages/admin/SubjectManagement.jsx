@@ -83,7 +83,7 @@ export default function SubjectManagement() {
       <PageHeader
         title="Subject Management"
         subtitle="Create and manage subjects for each class"
-        action={{ label: 'Add Subject', icon: <AddIcon fontSize="small" />, onClick: () => openDialog(null), disabled: !selectedClass }}
+        action={{ label: 'Add Subject', icon: <AddIcon fontSize="small" />, onClick: () => openDialog(null), disabled: !selectedClass, disabledHint: 'Select a class first' }}
       />
 
       <Card sx={{ mb: 3 }}>

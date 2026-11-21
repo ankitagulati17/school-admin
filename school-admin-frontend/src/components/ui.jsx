@@ -1,10 +1,22 @@
-import { Box, Typography, Button, Divider } from '@mui/material'
+import { Box, Typography, Button, Divider, Tooltip } from '@mui/material'
 
 /**
  * Consistent page header used across all pages.
- * Props: title, subtitle, action (optional button config: { label, icon, onClick })
+ * Props: title, subtitle, action (optional button config: { label, icon, onClick, disabled, disabledHint })
  */
 export function PageHeader({ title, subtitle, action }) {
+  const btn = action ? (
+    <Button
+      variant="contained"
+      startIcon={action.icon}
+      onClick={action.onClick}
+      disabled={action.disabled}
+      sx={{ flexShrink: 0 }}
+    >
+      {action.label}
+    </Button>
+  ) : null
+
   return (
     <Box sx={{ mb: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
@@ -19,14 +31,9 @@ export function PageHeader({ title, subtitle, action }) {
           )}
         </Box>
         {action && (
-          <Button
-            variant="contained"
-            startIcon={action.icon}
-            onClick={action.onClick}
-            sx={{ flexShrink: 0 }}
-          >
-            {action.label}
-          </Button>
+          action.disabled && action.disabledHint
+            ? <Tooltip title={action.disabledHint}><span>{btn}</span></Tooltip>
+            : btn
         )}
       </Box>
       <Divider sx={{ mt: 2 }} />

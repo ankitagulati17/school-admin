@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Box, Typography, Button, Stepper, Step, StepLabel, TextField, MenuItem,
   Grid, Card, CardContent, Table, TableHead, TableRow, TableCell, TableBody,
-  CircularProgress, Chip, Tabs, Tab, IconButton
+  CircularProgress, Chip, Tabs, Tab, IconButton, TablePagination
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -44,6 +44,8 @@ export default function Admission() {
   const [listLoading, setListLoading] = useState(true)
   const [editId, setEditId] = useState(null)
   const [editDialog, setEditDialog] = useState(false)
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const load = async () => {
     setListLoading(true)
@@ -171,12 +173,13 @@ export default function Admission() {
     // Step 2: Academic
     <Grid container spacing={2} key="academic">
       <Grid item xs={12} sm={6}>
-        <TextField fullWidth size="small" select label="Class" value={form.classId} onChange={e=>handleClassChange(e.target.value)}>
+        <TextField fullWidth size="small" select required label="Class" value={form.classId} onChange={e=>handleClassChange(e.target.value)}>
           {Array.isArray(classes) ? classes.map(c=><MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>) : null}
         </TextField>
       </Grid>
       <Grid item xs={12} sm={6}>
-        <TextField fullWidth size="small" select label="Section" value={form.sectionId} onChange={set('sectionId')} disabled={!form.classId}>
+        <TextField fullWidth size="small" select required label="Section" value={form.sectionId} onChange={set('sectionId')} disabled={!form.classId}
+          helperText={!form.classId ? 'Select a class first' : ''}>
           {Array.isArray(sections) ? sections.map(s=><MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>) : null}
         </TextField>
       </Grid>
@@ -238,7 +241,12 @@ export default function Admission() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} gutterBottom>Admission Module</Typography>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight={700} sx={{ color: '#111827' }}>Admission Module</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4 }}>
+          Enroll new students and manage existing student records
+        </Typography>
+      </Box>
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
@@ -258,10 +266,19 @@ export default function Admission() {
             <Box sx={{ display:'flex', justifyContent:'flex-end', gap:2, mt:3 }}>
               {activeStep > 0 && <Button onClick={() => setActiveStep(s=>s-1)}>Back</Button>}
               {activeStep < STEPS.length - 1 && (
-                <Button variant="contained" onClick={() => setActiveStep(s=>s+1)} disabled={activeStep===0 && !form.name}>Next</Button>
+                <Button
+                  variant="contained"
+                  onClick={() => setActiveStep(s=>s+1)}
+                  disabled={
+                    (activeStep === 0 && !form.name) ||
+                    (activeStep === 2 && (!form.classId || !form.sectionId))
+                  }
+                >
+                  Next
+                </Button>
               )}
               {activeStep === STEPS.length - 1 && (
-                <Button variant="contained" color="success" onClick={handleSubmit} disabled={loading}>
+                <Button variant="contained" color="success" onClick={handleSubmit} disabled={loading || !form.classId || !form.sectionId}>
                   {loading ? <CircularProgress size={22} color="inherit" /> : 'Submit Admission'}
                 </Button>
               )}
@@ -275,37 +292,48 @@ export default function Admission() {
       {tab === 1 && (
         <Box sx={{ bgcolor: '#fff', borderRadius: 2, border: '1px solid #e5e7eb', overflow: 'auto' }}>
           {listLoading ? <Box p={4}><CircularProgress /></Box> : Array.isArray(students) && students.length > 0 ? (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  {['Adm No','Name','Class','Section','Father','Contact','Date','Status','Actions'].map(h=>(
-                    <TableCell key={h} sx={{ fontWeight: 600 }}>{h}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {students.map(s => (
-                  <TableRow key={s.id} hover>
-                    <TableCell>{s.admissionNumber}</TableCell>
-                    <TableCell>{s.name}</TableCell>
-                    <TableCell>{s.schoolClass?.className}</TableCell>
-                    <TableCell>{s.section?.name}</TableCell>
-                    <TableCell>{s.fatherName}</TableCell>
-                    <TableCell>{s.parentContact}</TableCell>
-                    <TableCell>{formatDate(s.admissionDate)}</TableCell>
-                    <TableCell><Chip label={s.active?'Active':'Inactive'} color={s.active?'success':'default'} size="small" /></TableCell>
-                    <TableCell>
-                      <IconButton size="small" color="primary" onClick={() => handleEdit(s)} title="Edit student">
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={() => handleDelete(s.id)} title="Delete student">
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    {['Adm No','Name','Class','Section','Father','Contact','Date','Status','Actions'].map(h=>(
+                      <TableCell key={h} sx={{ fontWeight: 600 }}>{h}</TableCell>
+                    ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {students.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(s => (
+                    <TableRow key={s.id} hover>
+                      <TableCell>{s.admissionNumber}</TableCell>
+                      <TableCell>{s.name}</TableCell>
+                      <TableCell>{s.schoolClass?.className}</TableCell>
+                      <TableCell>{s.section?.name}</TableCell>
+                      <TableCell>{s.fatherName}</TableCell>
+                      <TableCell>{s.parentContact}</TableCell>
+                      <TableCell>{formatDate(s.admissionDate)}</TableCell>
+                      <TableCell><Chip label={s.active?'Active':'Inactive'} color={s.active?'success':'default'} size="small" /></TableCell>
+                      <TableCell>
+                        <IconButton size="small" color="primary" onClick={() => handleEdit(s)} title="Edit student">
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error" onClick={() => handleDelete(s.id)} title="Delete student">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <TablePagination
+                component="div"
+                count={students.length}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
+                rowsPerPageOptions={[10, 25, 50]}
+              />
+            </>
           ) : (
             <Box p={4} sx={{ textAlign:'center', color:'text.secondary' }}>
               <Typography variant="body1">No students admitted yet</Typography>

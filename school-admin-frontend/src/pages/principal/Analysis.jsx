@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Box, Typography, Grid, TextField, MenuItem, Button, Card, CardContent,
-  CircularProgress, Divider
+  CircularProgress, Divider, Table, TableHead, TableRow, TableCell, TableBody, Chip
 } from '@mui/material'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -9,6 +9,7 @@ import {
 } from 'recharts'
 import { getAcademicAnalysis, getFinancialAnalysis } from '../../api/analysisApi'
 import { toast } from 'react-toastify'
+import { PageHeader } from '../../components/ui'
 
 const YEARS = ['2024-2025', '2023-2024']
 const COLORS = ['#1565c0','#2e7d32','#e65100','#7b1fa2','#c62828','#00838f']
@@ -44,12 +45,18 @@ export default function Analysis() {
 
   return (
     <Box>
-      <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:3 }}>
-        <Typography variant="h5" fontWeight={700}>Analysis</Typography>
-        <TextField select label="Academic Year" value={year} onChange={e=>setYear(e.target.value)} size="small" sx={{ minWidth:150 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2 }}>
+        <Box>
+          <Typography variant="h5" fontWeight={700} sx={{ color: '#111827' }}>Analysis</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4 }}>
+            Academic performance and fee collection analytics
+          </Typography>
+        </Box>
+        <TextField select label="Academic Year" value={year} onChange={e=>setYear(e.target.value)} size="small" sx={{ minWidth: 150 }}>
           {Array.isArray(YEARS) ? YEARS.map(y=><MenuItem key={y} value={y}>{y}</MenuItem>) : null}
         </TextField>
       </Box>
+      <Divider sx={{ mb: 3 }} />
 
       {loading ? (
         <Box sx={{ display:'flex', justifyContent:'center', mt:8 }}><CircularProgress /></Box>
@@ -124,25 +131,36 @@ export default function Analysis() {
                   <Typography variant="h6" fontWeight={600} gutterBottom>Class-wise Academic Details</Typography>
                   <Divider sx={{ mb:2 }} />
                   <Box sx={{ overflow:'auto' }}>
-                    <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                      <thead>
-                        <tr style={{ background:'#f5f6fa' }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#f5f6fa' }}>
                           {['Class','Avg Score (%)','Total Records','Pass Count'].map(h => (
-                            <th key={h} style={{ padding:'8px 16px', textAlign:'left', fontWeight:700, borderBottom:'1px solid #eee' }}>{h}</th>
+                            <TableCell key={h} sx={{ fontWeight: 700 }}>{h}</TableCell>
                           ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {academic.classwisePerformance.map((c, i) => (
-                          <tr key={c.classId} style={{ background: i%2===0?'#fff':'#fafafa' }}>
-                            <td style={{ padding:'8px 16px' }}>{c.className}</td>
-                            <td style={{ padding:'8px 16px', color: c.averagePercentage>=60?'#2e7d32':'#c62828', fontWeight:600 }}>{c.averagePercentage}%</td>
-                            <td style={{ padding:'8px 16px' }}>{c.totalRecords}</td>
-                            <td style={{ padding:'8px 16px' }}>{c.passCount}</td>
-                          </tr>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {academic.classwisePerformance.map((c) => (
+                          <TableRow key={c.classId} hover>
+                            <TableCell sx={{ fontWeight: 500 }}>{c.className}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={`${c.averagePercentage}%`}
+                                size="small"
+                                sx={{
+                                  bgcolor: c.averagePercentage >= 60 ? '#f0fdf4' : c.averagePercentage > 0 ? '#fef2f2' : '#f1f5f9',
+                                  color: c.averagePercentage >= 60 ? '#16a34a' : c.averagePercentage > 0 ? '#dc2626' : '#6b7280',
+                                  fontWeight: 700,
+                                  border: 'none',
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>{c.totalRecords}</TableCell>
+                            <TableCell>{c.passCount}</TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </Box>
                 </CardContent>
               </Card>

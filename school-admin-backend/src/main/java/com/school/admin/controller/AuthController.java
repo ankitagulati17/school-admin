@@ -37,4 +37,17 @@ public class AuthController {
     public ResponseEntity<?> toggleUser(@PathVariable Long id) {
         return ResponseEntity.ok(authService.toggleUserStatus(id));
     }
+
+    @PutMapping("/users/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserRequest request) {
+        return ResponseEntity.ok(authService.updateUser(id, request));
+    }
+
+    @DeleteMapping("/users/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        authService.deleteUser(id);
+        return ResponseEntity.ok().build();
+    }
 }

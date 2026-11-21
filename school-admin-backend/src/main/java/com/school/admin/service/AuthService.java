@@ -67,4 +67,35 @@ public class AuthService {
         user.setActive(!user.isActive());
         return userRepository.save(user);
     }
+
+    public User updateUser(Long userId, UserRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()
+                && !request.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new BadRequestException("Email already in use");
+            }
+            user.setEmail(request.getEmail());
+        }
+        if (request.getRole() != null && !request.getRole().isBlank()) {
+            user.setRole(User.Role.valueOf(request.getRole()));
+        }
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        if (request.getStudentId() != null) {
+            user.setStudentId(request.getStudentId());
+        }
+        return userRepository.save(user);
+    }
+
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+        userRepository.delete(user);
+    }
 }

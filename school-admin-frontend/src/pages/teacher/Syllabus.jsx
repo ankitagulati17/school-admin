@@ -2,15 +2,17 @@ import { useEffect, useState } from 'react'
 import {
   Box, Typography, Grid, TextField, MenuItem, Button, Card, CardContent,
   Table, TableHead, TableRow, TableCell, TableBody, Chip, CircularProgress,
-  IconButton, Dialog, DialogTitle, DialogContent, DialogActions, LinearProgress
+  IconButton, Dialog, DialogTitle, DialogContent, DialogActions, LinearProgress, Divider
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import MenuBookIcon from '@mui/icons-material/MenuBook'
 import { addSyllabus, updateSyllabus, getSyllabusByClassYear, deleteSyllabus } from '../../api/syllabusApi'
 import { getClasses, getSubjects } from '../../api/studentApi'
 import { toast } from 'react-toastify'
+import { PageHeader, EmptyState, SectionLabel } from '../../components/ui'
 
 const TERMS = ['Term 1', 'Term 2', 'Term 3']
 const YEARS = ['2024-2025', '2023-2024']
@@ -76,21 +78,23 @@ export default function Syllabus() {
 
   return (
     <Box>
-      <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
-        <Typography variant="h5" fontWeight={700}>Syllabus Management</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditId(null); setForm(INIT); setOpen(true) }}>Add Topic</Button>
-      </Box>
+      <PageHeader
+        title="Syllabus Management"
+        subtitle="Track topic coverage and monitor completion progress per class"
+        action={{ label: 'Add Topic', icon: <AddIcon fontSize="small" />, onClick: () => { setEditId(null); setForm(INIT); setOpen(true) } }}
+      />
 
-      <Card sx={{ borderRadius:3, boxShadow:2, mb:3 }}>
-        <CardContent>
+      <Card sx={{ borderRadius: 3, boxShadow: 2, mb: 3 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <SectionLabel>Filter by class and academic year</SectionLabel>
           <Grid container spacing={2} alignItems="flex-end">
             <Grid item xs={12} sm={4}>
-              <TextField fullWidth select label="Class" value={filter.classId} onChange={e=>handleClassChange(e.target.value,'filter')}>
+              <TextField fullWidth size="small" select label="Class" value={filter.classId} onChange={e=>handleClassChange(e.target.value,'filter')}>
                 {Array.isArray(classes) ? classes.map(c=><MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>) : null}
               </TextField>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField fullWidth select label="Academic Year" value={filter.academicYear} onChange={e=>setFilter(f=>({...f,academicYear:e.target.value}))}>
+              <TextField fullWidth size="small" select label="Academic Year" value={filter.academicYear} onChange={e=>setFilter(f=>({...f,academicYear:e.target.value}))}>
                 {YEARS.map(y=><MenuItem key={y} value={y}>{y}</MenuItem>)}
               </TextField>
             </Grid>
@@ -99,9 +103,9 @@ export default function Syllabus() {
             </Grid>
           </Grid>
           {Array.isArray(syllabi) && syllabi.length > 0 && (
-            <Box sx={{ mt:2 }}>
+            <Box sx={{ mt: 2 }}>
               <Typography variant="body2" mb={0.5}>Completion: {completed}/{syllabi.length} topics ({pct}%)</Typography>
-              <LinearProgress variant="determinate" value={pct} color={pct>=75?'success':pct>=50?'primary':'warning'} sx={{ borderRadius:2, height:8 }} />
+              <LinearProgress variant="determinate" value={pct} color={pct>=75?'success':pct>=50?'primary':'warning'} sx={{ borderRadius: 2, height: 8 }} />
             </Box>
           )}
         </CardContent>
@@ -131,7 +135,7 @@ export default function Syllabus() {
                   </TableCell>
                   <TableCell>{s.completedDate || '—'}</TableCell>
                   <TableCell>
-                    <IconButton size="small" onClick={() => { setEditId(s.id); setForm({classId:s.schoolClass?.id,subjectId:s.subject?.id,term:s.term,topic:s.topic,description:s.description||'',completedDate:s.completedDate||'',completed:s.completed,academicYear:s.academicYear}); setOpen(true) }}>
+                    <IconButton size="small" sx={{ color: '#2563eb' }} onClick={() => { setEditId(s.id); setForm({classId:s.schoolClass?.id,subjectId:s.subject?.id,term:s.term,topic:s.topic,description:s.description||'',completedDate:s.completedDate||'',completed:s.completed,academicYear:s.academicYear}); setOpen(true) }}>
                       <EditIcon fontSize="small" />
                     </IconButton>
                     <IconButton size="small" color="error" onClick={() => handleDelete(s.id)}><DeleteIcon fontSize="small" /></IconButton>
@@ -142,35 +146,41 @@ export default function Syllabus() {
           </Table>
         </Box>
       ) : (
-        <Box sx={{ textAlign:'center', py:8, color:'text.secondary' }}>
-          <Typography variant="body1">Select a class above and click "Load" to view syllabus topics</Typography>
-        </Box>
+        <EmptyState
+          icon={<MenuBookIcon sx={{ fontSize: 40 }} />}
+          message="No syllabus topics loaded"
+          hint='Select a class above and click "Load" to view syllabus topics'
+        />
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editId ? 'Edit' : 'Add'} Syllabus Topic</DialogTitle>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight={700}>{editId ? 'Edit' : 'Add'} Syllabus Topic</Typography>
+        </DialogTitle>
+        <Divider />
         <form onSubmit={handleSubmit}>
-          <DialogContent sx={{ display:'flex', flexDirection:'column', gap:2 }}>
-            <TextField select label="Class" required value={form.classId} onChange={e=>handleClassChange(e.target.value,'form')}>
+          <DialogContent sx={{ display:'flex', flexDirection:'column', gap:2, pt: 2.5 }}>
+            <TextField size="small" select label="Class" required value={form.classId} onChange={e=>handleClassChange(e.target.value,'form')}>
               {Array.isArray(classes) ? classes.map(c=><MenuItem key={c.id} value={c.id}>{c.className}</MenuItem>) : null}
             </TextField>
-            <TextField select label="Subject" required value={form.subjectId} onChange={set('subjectId')}>
+            <TextField size="small" select label="Subject" required value={form.subjectId} onChange={set('subjectId')}>
               {Array.isArray(subjects) ? subjects.map(s=><MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>) : null}
             </TextField>
-            <TextField select label="Term" value={form.term} onChange={set('term')}>
+            <TextField size="small" select label="Term" value={form.term} onChange={set('term')}>
               {TERMS.map(t=><MenuItem key={t} value={t}>{t}</MenuItem>)}
             </TextField>
-            <TextField label="Topic" required value={form.topic} onChange={set('topic')} />
-            <TextField label="Description" multiline rows={3} value={form.description} onChange={set('description')} />
-            <TextField label="Academic Year" value={form.academicYear} onChange={set('academicYear')} />
-            <TextField select label="Status" value={form.completed} onChange={e=>setForm(f=>({...f,completed:e.target.value==='true'}))}>
+            <TextField size="small" label="Topic" required value={form.topic} onChange={set('topic')} />
+            <TextField size="small" label="Description" multiline rows={3} value={form.description} onChange={set('description')} />
+            <TextField size="small" label="Academic Year" value={form.academicYear} onChange={set('academicYear')} />
+            <TextField size="small" select label="Status" value={form.completed} onChange={e=>setForm(f=>({...f,completed:e.target.value==='true'}))}>
               <MenuItem value="false">Pending</MenuItem>
               <MenuItem value="true">Completed</MenuItem>
             </TextField>
-            {form.completed && <TextField label="Completed Date" type="date" InputLabelProps={{ shrink:true }} value={form.completedDate} onChange={set('completedDate')} />}
+            {form.completed && <TextField size="small" label="Completed Date" type="date" InputLabelProps={{ shrink:true }} value={form.completedDate} onChange={set('completedDate')} />}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Divider />
+          <DialogActions sx={{ px: 3, py: 2 }}>
+            <Button onClick={() => setOpen(false)} sx={{ color: '#6b7280' }}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={loading}>
               {loading ? <CircularProgress size={20} color="inherit" /> : (editId?'Update':'Save')}
             </Button>

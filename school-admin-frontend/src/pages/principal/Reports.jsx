@@ -7,6 +7,8 @@ import {
 import { getAdmissionReport, getSyllabusReport, getClassStudentReport, getAttendanceReport, getPerformanceReport } from '../../api/reportApi'
 import { getClasses } from '../../api/studentApi'
 import { toast } from 'react-toastify'
+import { PageHeader, EmptyState } from '../../components/ui'
+import AssessmentIcon from '@mui/icons-material/Assessment'
 
 const YEARS = ['2024-2025', '2023-2024']
 
@@ -61,8 +63,16 @@ export default function Reports() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} gutterBottom>Reports</Typography>
-      <Tabs value={tab} onChange={handleTabChange} sx={{ mb:3 }} variant="scrollable">
+      <PageHeader
+        title="Reports"
+        subtitle="Generate admission, syllabus, attendance, performance and class summary reports"
+      />
+      <Tabs
+        value={tab}
+        onChange={handleTabChange}
+        sx={{ mb: 3, '& .MuiTab-root': { textTransform: 'none', fontWeight: 500, fontSize: 14 } }}
+        variant="scrollable"
+      >
         <Tab label="Admission Report" />
         <Tab label="Syllabus Report" />
         <Tab label="Attendance Report" />
@@ -241,9 +251,11 @@ export default function Reports() {
           )}
         </Box>
       ) : tab !== 0 ? (
-        <Box sx={{ textAlign:'center', py:8, color:'text.secondary' }}>
-          <Typography variant="body1">Select a class above and click "Generate" to view this report</Typography>
-        </Box>
+        <EmptyState
+          icon={<AssessmentIcon sx={{ fontSize: 40 }} />}
+          message="No report generated yet"
+          hint='Select a class above and click "Generate" to view this report'
+        />
       ) : null}
     </Box>
   )
