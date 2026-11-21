@@ -34,7 +34,10 @@ export default function Reports() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    getClasses().then(r => setClasses(r.data)).catch(() => {})
+    getClasses().then(r => {
+      setClasses(r.data)
+      if (r.data?.length > 0) setClassId(r.data[0].id)
+    }).catch(() => {})
     loadAdmissions()
   }, [])
 
@@ -59,7 +62,7 @@ export default function Reports() {
     setLoading(false)
   }
 
-  const handleTabChange = (_, v) => { setTab(v); setData(null); if (v === 0) loadAdmissions(); if (v === 4) loadReport(v) }
+  const handleTabChange = (_, v) => { setTab(v); setData(null); if (v === 0) loadAdmissions(); if (v === 4) loadReport(v); if (classId && v !== 0 && v !== 4) loadReport(v) }
 
   return (
     <Box>
